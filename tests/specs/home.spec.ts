@@ -1,5 +1,5 @@
 import { test, expect } from '../fixtures/test-fixtures';
-import { NavBar } from "../components/NavBar";
+import { NavBar } from "../components/navBar";
 
 test("navigate between tabs", async ({ page }) => {
   const navBar = new NavBar(page);
