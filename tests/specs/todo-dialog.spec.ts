@@ -17,6 +17,7 @@ type TaskFormFields = {
 };
 
 test("user can fill the task form and cancel", async ({ page }) => {
+  await page.goto("/"); 
   const navBar = new NavBar(page);
   await navBar.navigateToTab("home");
   await page.locator('[data-test="add-task-button"]').click();
@@ -41,6 +42,7 @@ test("user can fill the task form and cancel", async ({ page }) => {
 });
 
 test("user can fill the task form and set coordinates from the map1", async ({ page }) => {
+  await page.goto("/"); 
   const navBar = new NavBar(page);
   await navBar.navigateToTab("home");
   await page.locator('[data-test="add-task-button"]').click();
@@ -66,6 +68,7 @@ test("user can fill the task form and set coordinates from the map1", async ({ p
 });
 
 test("user can fill the task form and set coordinates from the map", async ({ page }) => {
+  await page.goto("/"); 
   const navBar = new NavBar(page);
   await navBar.navigateToTab("home");
   await page.locator('[data-test="add-task-button"]').click();

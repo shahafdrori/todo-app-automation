@@ -5,6 +5,7 @@ import { NavBar } from "../components/navBar";
 
 
 test("select location on map fills coordinates and moves marker correctly", async ({ page }) => {
+  await page.goto("/"); 
   const navBar = new NavBar(page);
   await navBar.navigateToTab("home");
   const el = page.locator('[data-test="add-task-button"]');
@@ -26,6 +27,7 @@ test("select location on map fills coordinates and moves marker correctly", asyn
 });
 
 test("user can select very far location on map dialog", async ({ page }) => {
+  await page.goto("/"); 
   const navBar = new NavBar(page);
   await navBar.navigateToTab("home");
   const el = page.locator('[data-test="add-task-button"]');
@@ -52,6 +54,7 @@ test("user can select very far location on map dialog", async ({ page }) => {
 });
 
 test("zoom buttons change map view zoom", async ({ page }) => {
+  await page.goto("/"); 
   const navBar = new NavBar(page);
   await navBar.navigateToTab("home");
   await page.locator('[data-test="add-task-button"]').click();
@@ -78,6 +81,7 @@ test("zoom buttons change map view zoom", async ({ page }) => {
 });
 
 test("zoom in eventually increases map view zoom", async ({ page }) => {
+  await page.goto("/"); 
   const navBar = new NavBar(page);
   await navBar.navigateToTab("home");
   await page.locator('[data-test="add-task-button"]').click();
@@ -98,6 +102,7 @@ test("zoom in eventually increases map view zoom", async ({ page }) => {
 });
 
 test.skip("map state resets when dialog is closed and reopened", async ({ page }) => {
+  await page.goto("/"); 
   const navBar = new NavBar(page);
   await navBar.navigateToTab("home");
   await page.locator('[data-test="add-task-button"]').click();
