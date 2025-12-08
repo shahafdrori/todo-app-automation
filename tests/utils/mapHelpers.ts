@@ -101,11 +101,9 @@ export async function clickRandomOnMapAndValidateInputs(
     const dy = markerAfter[1] - markerBefore[1];
     const distance = Math.sqrt(dx * dx + dy * dy);
 
-    if (distance === 0) {
-      console.warn("[mapHelpers] Marker coords didn’t change after click");
-    } else {
-      expect(distance).toBeGreaterThan(0);
-    }
+    expect(distance).toBeGreaterThan(0);
+    expect(distance, "Marker coords did not change after click").toBeGreaterThan(0);
+
   }
 
   return { longitude, latitude };

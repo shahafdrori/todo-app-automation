@@ -36,12 +36,12 @@ test("map tab wheel zoom changes map view zoom", async ({ page }) => {
 
   const zoomAfterOut = await mapPage.getZoom();
   expect(zoomAfterOut).not.toBeNull();
-  expect(zoomAfterOut).not.toBe(zoomBefore);
+  expect(zoomAfterOut!).toBeLessThan(zoomBefore!);
 
   await mapPage.zoomInWithWheel(5);
   await page.waitForTimeout(300);
 
   const zoomAfterIn = await mapPage.getZoom();
   expect(zoomAfterIn).not.toBeNull();
-  expect(zoomAfterIn).not.toBe(zoomAfterOut);
+  expect(zoomAfterIn!).toBeGreaterThan(zoomAfterOut!);
 });
