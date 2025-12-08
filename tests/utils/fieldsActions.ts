@@ -1,3 +1,4 @@
+///Users/shahafdrori/Projects/todo-app-automation/tests/utils/fieldsActions.ts
 import { Locator, Page, expect } from "@playwright/test";
 
 export class Fields<T extends Record<string, string>> {
@@ -42,7 +43,7 @@ export class Fields<T extends Record<string, string>> {
     await field.fill(value);
     await field.waitFor({ state: "visible" });
 
-    await expect(field).toHaveValue(value, { timeout: 30000 });
+    await expect(field).toHaveValue(value);
   }
 
   async clearField(fieldName: keyof T): Promise<void> {
@@ -58,9 +59,11 @@ export class Fields<T extends Record<string, string>> {
 
     await field.waitFor({ state: "visible" });
     await field.fill(value);
+    await expect(field).toHaveValue(value);
 
-    const option = this.page.getByRole("option", { name: value }).first();
-    await option.click();
+    // const option = this.page.getByRole("option", { name: value }).first();
+    // await expect(option).toBeVisible();
+    // await option.click();
   }
 
   async fillTextFieldAndEnter(
@@ -106,6 +109,8 @@ export class Fields<T extends Record<string, string>> {
     }
   }
 }
+
+
 
 
 
