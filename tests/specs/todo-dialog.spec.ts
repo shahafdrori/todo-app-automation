@@ -2,6 +2,7 @@
 import { test, expect } from "../fixtures/test-fixtures";
 import { Fields } from "../utils/fieldsActions";
 import { MapPage } from "../pages/MapPage";
+import { NavBar } from "../components/navBar";
 
 
 type TaskFormFields = {
@@ -16,7 +17,8 @@ type TaskFormFields = {
 };
 
 test("user can fill the task form and cancel", async ({ page }) => {
-  // 1) Open the dialog
+  const navBar = new NavBar(page);
+  await navBar.navigateToTab("home");
   await page.locator('[data-test="add-task-button"]').click();
 
   // 2) Create the Fields helper bound to this page
@@ -39,7 +41,8 @@ test("user can fill the task form and cancel", async ({ page }) => {
 });
 
 test("user can fill the task form and set coordinates from the map1", async ({ page }) => {
-  // 1) Open the dialog
+  const navBar = new NavBar(page);
+  await navBar.navigateToTab("home");
   await page.locator('[data-test="add-task-button"]').click();
 
   // 2) Helpers
@@ -63,7 +66,8 @@ test("user can fill the task form and set coordinates from the map1", async ({ p
 });
 
 test("user can fill the task form and set coordinates from the map", async ({ page }) => {
-  // 1) Open the dialog
+  const navBar = new NavBar(page);
+  await navBar.navigateToTab("home");
   await page.locator('[data-test="add-task-button"]').click();
 
   // 2) Helpers
