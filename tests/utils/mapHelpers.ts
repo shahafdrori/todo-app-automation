@@ -1,4 +1,3 @@
-// tests/utils/mapHelpers.ts
 import { Page, expect, Locator } from "@playwright/test";
 
 export const MAP_SELECTOR = '[data-test="task-map"]';
@@ -10,13 +9,19 @@ export type LngLat = {
   latitude: number;
 };
 
+// padding (in px) to avoid UI controls around the edges of the map
+const MAP_SAFE_PADDING = {
+  top: 40,    // avoid the + / − buttons area
+  right: 40,
+  bottom: 40, // avoid the copyright link area
+  left: 40,
+};
+
 async function waitForMapReady(page: Page): Promise<Locator> {
   const map = page.locator(MAP_SELECTOR);
 
-  // 1. container visible
   await expect(map).toBeVisible();
 
-  // 2. OpenLayers + marker + click handler are wired
   await page.waitForFunction(() => {
     const w = window as any;
     return !!w.__OL_DEBUG__ && !!w.__OL_DEBUG__.map && !!w.__OL_DEBUG__.markerFeature;
@@ -32,6 +37,21 @@ async function getMapBox(page: Page) {
     throw new Error("Map bounding box not found");
   }
   return box;
+}
+
+// helper: pick a random point inside the map, but with padding from the edges
+function getSafeRandomPoint(box: { x: number; y: number; width: number; height: number }) {
+  const width = box.width - MAP_SAFE_PADDING.left - MAP_SAFE_PADDING.right;
+  const height = box.height - MAP_SAFE_PADDING.top - MAP_SAFE_PADDING.bottom;
+
+  if (width <= 0 || height <= 0) {
+    throw new Error("Map too small after applying safe padding");
+  }
+
+  const x = box.x + MAP_SAFE_PADDING.left + Math.random() * width;
+  const y = box.y + MAP_SAFE_PADDING.top + Math.random() * height;
+
+  return { x, y };
 }
 
 export async function getZoom(page: Page): Promise<number | null> {
@@ -50,22 +70,13 @@ export async function getMarkerCoords(
   });
 }
 
-/**
- * Dialog map:
- *  - click random point
- *  - wait for lng/lat inputs
- *  - validate ranges
- *  - validate marker is present and moved
- */
 export async function clickRandomOnMapAndValidateInputs(
   page: Page
 ): Promise<LngLat> {
   const box = await getMapBox(page);
-
   const markerBefore = await getMarkerCoords(page);
 
-  const x = box.x + Math.random() * box.width;
-  const y = box.y + Math.random() * box.height;
+  const { x, y } = getSafeRandomPoint(box);
 
   await page.mouse.click(x, y);
 
@@ -100,10 +111,7 @@ export async function clickRandomOnMapAndValidateInputs(
     const dx = markerAfter[0] - markerBefore[0];
     const dy = markerAfter[1] - markerBefore[1];
     const distance = Math.sqrt(dx * dx + dy * dy);
-
-    expect(distance).toBeGreaterThan(0);
     expect(distance, "Marker coords did not change after click").toBeGreaterThan(0);
-
   }
 
   return { longitude, latitude };
