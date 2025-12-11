@@ -54,6 +54,35 @@ test("user can fill the task form and click on the map with dialog open", async 
   await dialog.expectClosed();
 });
 
+test("user can submit a task", async ({
+  page,
+}) => {
+  await page.goto("/");
+  const navBar = new NavBar(page);
+  await navBar.navigateToTab("home");
+
+  await page.locator('[data-test="add-task-button"]').click();
+
+  const dialog = new AddTaskDialog(page);
+  await dialog.expectOpen();
+
+  await dialog.fillBasicFields({
+    name: "Task with map",
+    priority: 4,
+    subject: "OCP",
+    date: "12/06/2025",
+  });
+
+  const mapPage = new MapPage(page);
+  await mapPage.expectMapVisible();
+
+  // Just verify that clicking on the map works with the form open
+  await mapPage.clickRandomAndReadCoordinates();
+
+  await dialog.submit();
+  await dialog.expectClosed();
+});
+
 test("user can fill the task form and set coordinates from the map", async ({
   page,
 }) => {
