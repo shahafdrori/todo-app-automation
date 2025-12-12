@@ -10,7 +10,7 @@ export class Fields<T extends Record<string, string>> {
 
   async getFieldByPath(fieldName: keyof T): Promise<Locator> {
     const base = this.page.locator(
-      `[name="${String(fieldName)}"], [id="${String(fieldName)}"], input[value="${String(fieldName)}"]`
+      `[name="${String(fieldName)}"], [id="${String(fieldName)}"], input[value="${String(fieldName)}"], [data-test="${String(fieldName)}"]`
     );
 
     await base.waitFor({ state: "visible" });

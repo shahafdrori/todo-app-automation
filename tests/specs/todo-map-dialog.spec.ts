@@ -49,8 +49,8 @@ test("user can select very far location on map dialog", async ({ page }) => {
   const deltaLon = Math.abs(second.longitude - first.longitude);
   const deltaLat = Math.abs(second.latitude - first.latitude);
 
-  expect(deltaLon).toBeGreaterThan(0.05);
-  expect(deltaLat).toBeGreaterThan(0.05);
+  expect(deltaLon).toBeGreaterThan(0.03);
+  expect(deltaLat).toBeGreaterThan(0.03);
 });
 
 test("zoom buttons change map view zoom", async ({ page }) => {

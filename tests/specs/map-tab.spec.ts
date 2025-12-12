@@ -4,6 +4,7 @@ import { NavBar } from "../components/navBar";
 import { MapPage } from "../pages/MapPage";
 
 test("user can pan and zoom on the map tab", async ({ page }) => {
+  await page.goto("/");
   const navBar = new NavBar(page);
   const navMap = page.locator('[data-test="nav-map"]');
   console.log("nav-map count:", await navMap.count());
@@ -19,6 +20,7 @@ test("user can pan and zoom on the map tab", async ({ page }) => {
 });
 
 test("map tab wheel zoom changes map view zoom", async ({ page }) => {
+  await page.goto("/");
   const navBar = new NavBar(page);
   const navMap = page.locator('[data-test="nav-map"]');
   console.log("nav-map count:", await navMap.count());
