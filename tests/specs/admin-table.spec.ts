@@ -12,8 +12,6 @@ import { buildUniqueTask } from "../utils/taskData";
  * will definitely appear in the first page of results.
  */
 async function clearAllTasksViaHome(page: Page) {
-  await page.goto("/");
-
   const navBar = new NavBar(page);
   await navBar.navigateToTab("home");
 
@@ -35,6 +33,7 @@ async function clearAllTasksViaHome(page: Page) {
 test("task created from home appears in admin table with all fields correct", async ({
   page,
 }) => {
+  await page.goto("/");
   await clearAllTasksViaHome(page);
 
   const navBar = new NavBar(page);
@@ -75,6 +74,7 @@ test("task created from home appears in admin table with all fields correct", as
 test("task created from admin appears in admin table with all fields correct", async ({
   page,
 }) => {
+  await page.goto("/");
   await clearAllTasksViaHome(page);
 
   const navBar = new NavBar(page);
