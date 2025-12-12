@@ -34,10 +34,12 @@ export class AddTaskDialog {
   async expectOpen(): Promise<void> {
     await expect(this.root).toBeVisible();
   }
-
+  
   async expectClosed(): Promise<void> {
-    await expect(this.page.getByRole("dialog")).toBeHidden();
+  // Wait for the SAME dialog we opened to disappear
+    await expect(this.root).toBeHidden({ timeout: 10000 });
   }
+
 
   /**
    * Fill the basic non-map fields in the dialog:

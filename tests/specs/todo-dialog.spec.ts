@@ -3,6 +3,7 @@ import { test, expect } from "../fixtures/test-fixtures";
 import { AddTaskDialog } from "../pages/AddTaskDialog";
 import { MapPage } from "../pages/MapPage";
 import { NavBar } from "../components/navBar";
+import { buildUniqueTask } from "../utils/taskData";
 
 test("user can fill the task form and cancel", async ({ page }) => {
   await page.goto("/");
@@ -54,9 +55,7 @@ test("user can fill the task form and click on the map with dialog open", async 
   await dialog.expectClosed();
 });
 
-test("user can submit a task", async ({
-  page,
-}) => {
+test("user can submit a task", async ({ page }) => {
   await page.goto("/");
   const navBar = new NavBar(page);
   await navBar.navigateToTab("home");
@@ -66,17 +65,13 @@ test("user can submit a task", async ({
   const dialog = new AddTaskDialog(page);
   await dialog.expectOpen();
 
-  await dialog.fillBasicFields({
-    name: "Task with map",
-    priority: 4,
-    subject: "OCP",
-    date: "12/06/2025",
-  });
+  // Use unique task data so name collisions do not happen across projects
+  const taskData = buildUniqueTask("Dialog task");
+  await dialog.fillBasicFields(taskData);
 
   const mapPage = new MapPage(page);
   await mapPage.expectMapVisible();
 
-  // Just verify that clicking on the map works with the form open
   await mapPage.clickRandomAndReadCoordinates();
 
   await dialog.submit();

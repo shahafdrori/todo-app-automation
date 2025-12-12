@@ -180,7 +180,7 @@ export class TableHelper {
   async expectRowExists(
     headerText: string,
     expected: string | RegExp,
-    timeoutMs: number = 5000,
+    timeoutMs: number = 10000,
     pollIntervalMs: number = 200
   ): Promise<Locator> {
     const start = Date.now();

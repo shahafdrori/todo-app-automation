@@ -131,4 +131,12 @@ export class AdminTablePage {
     expect(lng).toBeCloseTo(task.longitude, 4);
     expect(lat).toBeCloseTo(task.latitude, 4);
   }
+
+    async reload(): Promise<void> {
+    await this.page.reload();
+    await this.expectLoaded();
+  }
+
 }
+
+
