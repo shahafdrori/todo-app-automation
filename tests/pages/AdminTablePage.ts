@@ -1,3 +1,4 @@
+//tests/pages/AdminTablePage.ts
 import { expect, Page } from "@playwright/test";
 import { TableHelper } from "../utils/tableHelpers";
 import { NavBar } from "../components/navBar";
