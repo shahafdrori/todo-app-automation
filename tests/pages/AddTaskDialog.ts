@@ -1,6 +1,6 @@
 // tests/pages/AddTaskDialog.ts
 import { Page, Locator, expect } from "@playwright/test";
-import { FormFields } from "../utils/formFields";
+import { FormFields } from "../helpers/FormFields";
 
 export type TaskFormFields = {
   name: string;

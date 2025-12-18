@@ -1,6 +1,6 @@
 //tests/components/navBar.ts
 import { Page, expect } from "@playwright/test";
-import { Buttons } from "../utils/buttonsActions";
+import { Buttons } from "../helpers/Buttons";
 
 export const NAV_TABS = {
   home: {

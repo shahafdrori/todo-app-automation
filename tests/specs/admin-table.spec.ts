@@ -5,7 +5,7 @@ import { NavBar } from "../components/navBar";
 import { AddTaskDialog } from "../pages/AddTaskDialog";
 import { MapPage } from "../pages/MapPage";
 import { AdminTablePage } from "../pages/AdminTablePage";
-import { buildUniqueTask } from "../utils/taskData";
+import { buildUniqueTask } from "../data/taskData";
 
 /**
  * Helper: start from a clean state so the new task

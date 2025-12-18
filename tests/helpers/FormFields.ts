@@ -1,4 +1,4 @@
-// tests/utils/formFields.ts
+//tests/helpers/FormFields.ts
 import { Locator, Page, expect } from "@playwright/test";
 
 export class FormFields<T extends Record<string, string>> {

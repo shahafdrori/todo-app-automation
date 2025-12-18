@@ -1,6 +1,6 @@
 //tests/pages/AdminTablePage.ts
 import { expect, Page } from "@playwright/test";
-import { TableHelper } from "../utils/tableHelpers";
+import { TableHelper } from "../helpers/TableHelper";
 import { NavBar } from "../components/navBar";
 
 export class AdminTablePage {

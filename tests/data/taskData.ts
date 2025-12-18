@@ -1,4 +1,4 @@
-//tests/utils/taskData.ts
+//tests/data/taskData.ts
 export type BasicTaskData = {
   name: string;
   priority: number;

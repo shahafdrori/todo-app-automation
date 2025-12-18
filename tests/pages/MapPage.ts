@@ -9,7 +9,7 @@ import {
   getZoom,
   getMarkerCoords,
   LngLat,
-} from "../utils/mapHelpers";
+} from "../helpers/map/mapHelpers";
 
 export class MapPage {
   constructor(private page: Page) {}

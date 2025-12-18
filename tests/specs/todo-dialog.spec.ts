@@ -3,7 +3,7 @@ import { test, expect } from "../fixtures/test-fixtures";
 import { AddTaskDialog } from "../pages/AddTaskDialog";
 import { MapPage } from "../pages/MapPage";
 import { NavBar } from "../components/navBar";
-import { buildUniqueTask } from "../utils/taskData";
+import { buildUniqueTask } from "../data/taskData";
 
 test("user can fill the task form and cancel", async ({ page }) => {
   await page.goto("/");

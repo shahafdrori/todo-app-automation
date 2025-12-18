@@ -1,4 +1,4 @@
-//tests/utils/tableHelpers.ts
+//tests/helpers/TableHelper.ts
 import { expect, Locator, Page } from "@playwright/test";
 
 /**

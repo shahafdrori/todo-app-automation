@@ -1,4 +1,4 @@
-//tests/utils/mapHelpers.ts
+//tests/helpers/map/mapHelpers.ts
 import { Page, expect, Locator } from "@playwright/test";
 
 export const MAP_SELECTOR = '[data-test="task-map"]';
