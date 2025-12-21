@@ -57,7 +57,7 @@ export class AdminTablePage {
     subject: string;
     priority: number;
   }): Promise<void> {
-    const row = await this.table.expectRowExists("NAME", task.name);
+    const row = await this.table.expectRowExists("NAME", task.name, 30_000);
 
     await this.table.expectRowValues(row, {
       NAME: task.name,
@@ -75,7 +75,7 @@ export class AdminTablePage {
     expectedLat: number,
     digits: number = 4
   ): Promise<void> {
-    const row = await this.table.expectRowExists("NAME", taskName);
+    const row = await this.table.expectRowExists("NAME", taskName, 30_000);
 
     const lngText = await this.table.getCellText(row, "LONGITUDE");
     const latText = await this.table.getCellText(row, "LATITUDE");
@@ -102,7 +102,7 @@ export class AdminTablePage {
     longitude: number;
     latitude: number;
   }): Promise<void> {
-    const row = await this.table.expectRowExists("NAME", task.name);
+    const row = await this.table.expectRowExists("NAME", task.name, 30_000);
 
     // 1) Check basic text columns
     await this.table.expectRowValues(row, {

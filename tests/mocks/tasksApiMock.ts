@@ -22,7 +22,7 @@ export async function attachTasksApiMock(page: Page) {
   const tasks: AnyTask[] = [];
 
   // GET /tasks/all
-  await ctx.route("**/tasks/all", async (route: Route) => {
+  await ctx.route("**/tasks/all**", async (route: Route) => {
     if (route.request().method() !== "GET") return route.fallback();
 
     await route.fulfill({
@@ -33,7 +33,7 @@ export async function attachTasksApiMock(page: Page) {
   });
 
   // POST /tasks/add
-  await ctx.route("**/tasks/add", async (route: Route) => {
+  await ctx.route("**/tasks/add**", async (route: Route) => {
     if (route.request().method() !== "POST") return route.fallback();
 
     let body: any = {};
@@ -52,7 +52,7 @@ export async function attachTasksApiMock(page: Page) {
   });
 
   // PUT /tasks/update/:id
-  await ctx.route("**/tasks/update/*", async (route: Route) => {
+  await ctx.route("**/tasks/update/**", async (route: Route) => {
     if (route.request().method() !== "PUT") return route.fallback();
 
     const id = lastPathSegment(route.request().url());
@@ -76,7 +76,7 @@ export async function attachTasksApiMock(page: Page) {
   });
 
   // DELETE /tasks/delete/:id
-  await ctx.route("**/tasks/delete/*", async (route: Route) => {
+  await ctx.route("**/tasks/delete/**", async (route: Route) => {
     if (route.request().method() !== "DELETE") return route.fallback();
 
     const id = lastPathSegment(route.request().url());
@@ -95,7 +95,7 @@ export async function attachTasksApiMock(page: Page) {
   });
 
   // DELETE /tasks/deleteAll
-  await ctx.route("**/tasks/deleteAll", async (route: Route) => {
+  await ctx.route("**/tasks/deleteAll**", async (route: Route) => {
     if (route.request().method() !== "DELETE") return route.fallback();
 
     const deletedCount = tasks.length;

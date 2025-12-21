@@ -55,6 +55,10 @@ export class AddTaskDialog {
     await this.form.setPriority("priority", priority);
     await this.form.selectOption("subject", subject);
     await this.form.fillTextFieldAndEnter("date", date);
+    const dateField = await this.form.getFieldByPath("date");
+    await dateField.blur(); // or: await this.page.keyboard.press("Tab");
+
+
   }
 
   async setCoordinatesManually(lng: string, lat: string): Promise<void> {
@@ -97,6 +101,12 @@ async submit(): Promise<void> {
 
     return { status, json };
   }
+
+  async submitAndEnsureClosed(): Promise<void> {
+    await this.submitBtn.click();
+    await this.ensureClosed();
+  }
+
 
 
   async ensureClosed(): Promise<void> {
