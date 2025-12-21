@@ -1,5 +1,5 @@
 // tests/pages/AddTaskDialog.ts
-import { Page, Locator, expect } from "@playwright/test";
+import { Page, Locator, expect, APIResponse } from "@playwright/test";
 import { FormFields } from "../helpers/FormFields";
 
 export type TaskFormFields = {
@@ -25,38 +25,37 @@ export class AddTaskDialog {
   readonly root: Locator;
   readonly form: FormFields<TaskFormFields>;
 
+  // keep buttons scoped to the dialog (not the whole page)
+  private readonly submitBtn: Locator;
+  private readonly cancelBtn: Locator;
+
   constructor(page: Page) {
     this.page = page;
     this.root = page.getByRole("dialog");
     this.form = new FormFields<TaskFormFields>(page, this.root);
+
+    this.submitBtn = this.root.locator('[data-test="submit-button"]');
+    this.cancelBtn = this.root.locator('[data-test="cancel-button"]');
   }
 
   async expectOpen(): Promise<void> {
     await expect(this.root).toBeVisible();
   }
-  
+
   async expectClosed(): Promise<void> {
-  // Wait for the SAME dialog we opened to disappear
+    // Only use this after you explicitly close (cancel/X),
+    // NOT after submit unless the product is supposed to auto-close.
     await expect(this.root).toBeHidden({ timeout: 10000 });
   }
 
-
-  /**
-   * Fill the basic non-map fields in the dialog:
-   * name, priority (1–5), subject (dropdown), date.
-   */
   async fillBasicFields(data: BasicTaskData): Promise<void> {
     const { name, priority, subject, date } = data;
 
     await this.form.fillTextField("name", name);
     await this.form.setPriority("priority", priority);
-
     await this.form.selectOption("subject", subject);
-
-    // date input behaves like a normal text field in your DatePicker
     await this.form.fillTextFieldAndEnter("date", date);
   }
-
 
   async setCoordinatesManually(lng: string, lat: string): Promise<void> {
     await this.form.fillTextField("coordinates.longitude", lng);
@@ -67,17 +66,40 @@ export class AddTaskDialog {
     const lngField = await this.form.getFieldByPath("coordinates.longitude");
     const latField = await this.form.getFieldByPath("coordinates.latitude");
 
-    const lng = await lngField.inputValue();
-    const lat = await latField.inputValue();
-
-    return { lng, lat };
+    return {
+      lng: await lngField.inputValue(),
+      lat: await latField.inputValue(),
+    };
   }
 
-  async submit(): Promise<void> {
-    await this.page.locator('[data-test="submit-button"]').click();
+async submit(): Promise<void> {
+  await this.submitBtn.click();
+}
+
+
+  // 1) Click submit + wait for the POST /tasks/add response (this answers “was it sent?”)
+  async submitAndWaitForCreate(): Promise<{ status: number; json?: unknown }> {
+    const [res] = await Promise.all([
+      this.page.waitForResponse((r) => {
+        const req = r.request();
+        return req.method() === "POST" && r.url().includes("/tasks/add");
+      }),
+      this.submitBtn.click(),
+    ]);
+
+    const status = res.status();
+    let json: unknown;
+    try {
+      json = await res.json();
+    } catch {
+      // ignore non-JSON
+    }
+
+    return { status, json };
   }
 
+  // 2) If you want to close the dialog, do it explicitly
   async cancel(): Promise<void> {
-    await this.page.locator('[data-test="cancel-button"]').click();
+    await this.cancelBtn.click();
   }
 }

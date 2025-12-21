@@ -5,6 +5,89 @@ import { MapPage } from "../pages/MapPage";
 import { NavBar } from "../components/navBar";
 import { buildUniqueTask } from "../data/taskData";
 
+import type { Page, Request } from "@playwright/test";
+
+function formatDateMDY(date: Date): string {
+  const mm = String(date.getMonth() + 1).padStart(2, "0");
+  const dd = String(date.getDate()).padStart(2, "0");
+  const yyyy = String(date.getFullYear());
+  return `${mm}/${dd}/${yyyy}`;
+}
+
+function futureDateMDY(daysAhead = 1): string {
+  const d = new Date();
+  d.setDate(d.getDate() + daysAhead);
+  return formatDateMDY(d);
+}
+
+
+function attachApiLogs(page: Page) {
+  const flag = "__apiLogsAttached__";
+  if ((page as any)[flag]) return;
+  (page as any)[flag] = true;
+
+  const isRelevant = (url: string) =>
+    url.includes("/tasks") || url.includes("todolisthafifa");
+
+  page.on("request", (req: Request) => {
+    const url = req.url();
+    if (!isRelevant(url)) return;
+
+    const method = req.method();
+    console.log(`[REQ] ${method} ${url}`);
+
+    if (method === "POST") {
+      try {
+        const json = req.postDataJSON();
+        console.log("[REQ BODY]", JSON.stringify(json, null, 2));
+      } catch {
+        const raw = req.postData();
+        if (raw) console.log("[REQ BODY RAW]", raw);
+      }
+    }
+  });
+
+  page.on("response", async (res) => {
+    const url = res.url();
+    if (!isRelevant(url)) return;
+
+    console.log(`[RES] ${res.status()} ${res.request().method()} ${url}`);
+
+    try {
+      const ct = res.headers()["content-type"] || "";
+      if (ct.includes("application/json")) {
+        const body = await res.json();
+        console.log("[RES JSON]", JSON.stringify(body, null, 2));
+      } else {
+        const text = await res.text();
+        console.log("[RES TEXT]", text.slice(0, 500));
+      }
+    } catch (e) {
+      console.log("[RES READ ERROR]", String(e));
+    }
+  });
+
+  page.on("requestfailed", (req) => {
+    const url = req.url();
+    if (!isRelevant(url)) return;
+
+    console.log(
+      `[REQ FAIL] ${req.method()} ${url} -> ${req.failure()?.errorText ?? "unknown"}`
+    );
+  });
+
+  page.on("console", (msg) => {
+    const txt = msg.text();
+    if (txt.toLowerCase().includes("error")) {
+      console.log(`[BROWSER CONSOLE] ${msg.type()}: ${txt}`);
+    }
+  });
+
+  page.on("pageerror", (err) => {
+    console.log("[PAGE ERROR]", err.message);
+  });
+}
+
 test("user can fill the task form and cancel", async ({ page }) => {
   await page.goto("/");
   const navBar = new NavBar(page);
@@ -19,16 +102,14 @@ test("user can fill the task form and cancel", async ({ page }) => {
     name: "My task",
     priority: 3,
     subject: "OCP",
-    date: "12/06/2025",
+    date: futureDateMDY(2),
   });
 
   await dialog.cancel();
   await dialog.expectClosed();
 });
 
-test("user can fill the task form and click on the map with dialog open", async ({
-  page,
-}) => {
+test("user can fill the task form and click on the map with dialog open", async ({ page }) => {
   await page.goto("/");
   const navBar = new NavBar(page);
   await navBar.navigateToTab("home");
@@ -42,13 +123,12 @@ test("user can fill the task form and click on the map with dialog open", async 
     name: "Task with map",
     priority: 4,
     subject: "OCP",
-    date: "12/06/2025",
+    date: futureDateMDY(2),
   });
 
   const mapPage = new MapPage(page);
   await mapPage.expectMapVisible();
 
-  // Just verify that clicking on the map works with the form open
   await mapPage.clickRandomAndReadCoordinates();
 
   await dialog.cancel();
@@ -56,7 +136,10 @@ test("user can fill the task form and click on the map with dialog open", async 
 });
 
 test("user can submit a task", async ({ page }) => {
+  attachApiLogs(page);
+
   await page.goto("/");
+
   const navBar = new NavBar(page);
   await navBar.navigateToTab("home");
 
@@ -65,22 +148,35 @@ test("user can submit a task", async ({ page }) => {
   const dialog = new AddTaskDialog(page);
   await dialog.expectOpen();
 
-  // Use unique task data so name collisions do not happen across projects
   const taskData = buildUniqueTask("Dialog task");
   await dialog.fillBasicFields(taskData);
 
   const mapPage = new MapPage(page);
   await mapPage.expectMapVisible();
-
   await mapPage.clickRandomAndReadCoordinates();
 
-  await dialog.submit();
+  const [addRes, allRes] = await Promise.all([
+    page.waitForResponse(
+      (r) => r.url().includes("/tasks/add") && r.request().method() === "POST"
+    ),
+    page.waitForResponse(
+      (r) => r.url().includes("/tasks/all") && r.request().method() === "GET"
+    ),
+    dialog.submit(), // triggers the requests
+  ]);
+
+  expect(addRes.ok()).toBeTruthy(); // 200–299 (handles 201 too)
+  expect(allRes.ok()).toBeTruthy();
+
+
+  const allJson = await allRes.json();
+  expect(Array.isArray(allJson)).toBeTruthy();
+  expect((allJson as any[]).some((t) => t?.name === taskData.name)).toBeTruthy();
+
   await dialog.expectClosed();
 });
 
-test("user can fill the task form and set coordinates from the map", async ({
-  page,
-}) => {
+test("user can fill the task form and set coordinates from the map", async ({ page }) => {
   await page.goto("/");
   const navBar = new NavBar(page);
   await navBar.navigateToTab("home");
@@ -94,7 +190,7 @@ test("user can fill the task form and set coordinates from the map", async ({
     name: "Task with map",
     priority: 4,
     subject: "OCP",
-    date: "12/06/2025",
+    date: futureDateMDY(2),
   });
 
   const mapPage = new MapPage(page);
@@ -102,7 +198,6 @@ test("user can fill the task form and set coordinates from the map", async ({
 
   const { longitude, latitude } = await mapPage.clickRandomAndReadCoordinates();
 
-  // Read coordinates back from the form and compare
   const { lng: lngFromForm, lat: latFromForm } = await dialog.readCoordinates();
 
   expect(lngFromForm).not.toBe("");

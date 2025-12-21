@@ -2,9 +2,10 @@ import { test, expect } from '../fixtures/test-fixtures';
 import { NavBar } from "../components/navBar";
 
 test("navigate between tabs", async ({ page }) => {
-  const navBar = new NavBar(page);
+  await page.goto("/");
+  const nav = new NavBar(page);
 
-  await navBar.navigateToTab("home");
-  await navBar.navigateToTab("admin");
-  await navBar.navigateToTab("map");
+  await nav.navigateToTab("admin");
+  await nav.navigateToTab("map");
+  await nav.navigateToTab("home");
 });

@@ -31,6 +31,8 @@ jobs:
     env:
       BASE_URL: https://todolisthafifa-frontend.vercel.app
       CI: true
+      MOCK_API: "true"
+
 
     container: mcr.microsoft.com/playwright:v1.56.1-jammy
 
@@ -58,7 +60,7 @@ jobs:
         with:
           name: blob-report-${{ matrix.project }}-${{ matrix.shard }}
           path: blob-report/
-          if-no-files-found: ignore
+          if-no-files-found: error
           retention-days: 14
 
       - name: Upload test results (screenshots/videos/traces)
@@ -67,7 +69,7 @@ jobs:
         with:
           name: test-results-${{ matrix.project }}-${{ matrix.shard }}
           path: test-results/
-          if-no-files-found: ignore
+          if-no-files-found: error
           retention-days: 14
 
   merge-report:

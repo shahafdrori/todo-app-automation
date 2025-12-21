@@ -1,11 +1,14 @@
-// tests/fixtures/test-fixtures.ts
-import { test as base, expect } from "@playwright/test";
+import { test as base } from "@playwright/test";
+import { attachTasksApiMock } from "../mocks/tasksApiMock";
 
-const test = base.extend({});
-
-test.beforeEach(async ({ page }) => {
-  await page.goto("/"); 
+export const test = base.extend({
+  page: async ({ page }, use) => {
+    const shouldMock = process.env.MOCK_API === "true";
+    if (shouldMock) {
+      await attachTasksApiMock(page);
+    }
+    await use(page);
+  },
 });
 
-export { test, expect };
-
+export { expect } from "@playwright/test";
