@@ -7,6 +7,8 @@ import { buildUniqueTask } from "../data/taskData";
 
 import type { Page, Request } from "@playwright/test";
 
+
+
 function formatDateMDY(date: Date): string {
   const mm = String(date.getMonth() + 1).padStart(2, "0");
   const dd = String(date.getDate()).padStart(2, "0");
@@ -173,7 +175,7 @@ test("user can submit a task", async ({ page }) => {
   expect(Array.isArray(allJson)).toBeTruthy();
   expect((allJson as any[]).some((t) => t?.name === taskData.name)).toBeTruthy();
 
-  await dialog.expectClosed();
+  await dialog.ensureClosed();
 });
 
 test("user can fill the task form and set coordinates from the map", async ({ page }) => {

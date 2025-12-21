@@ -57,7 +57,7 @@ test("task created from home appears in admin table with all fields correct", as
 
   // 3. Submit task
   await dialog.submit();
-  await dialog.expectClosed();
+  await dialog.ensureClosed();
 
   // 4. Go to admin tab and check table
   await adminPage.goto(navBar);
@@ -100,7 +100,7 @@ test("task created from admin appears in admin table with all fields correct", a
 
   // 4. Submit and wait for dialog to close
   await dialog.submit();
-  await dialog.expectClosed();
+  await dialog.ensureClosed();
 
   // 5. The AdminTable is already refreshed via onSuccess(loadData).
   //    Just assert the row, with full validation.

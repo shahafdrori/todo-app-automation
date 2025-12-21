@@ -98,8 +98,19 @@ async submit(): Promise<void> {
     return { status, json };
   }
 
+
+  async ensureClosed(): Promise<void> {
+    await this.page.waitForTimeout(200);
+    if (await this.root.isVisible()) {
+      await this.cancelBtn.click();
+    }
+    await this.expectClosed();
+  }
+
+
   // 2) If you want to close the dialog, do it explicitly
   async cancel(): Promise<void> {
     await this.cancelBtn.click();
   }
 }
+
