@@ -103,19 +103,31 @@ async submit(): Promise<void> {
   }
 
   async submitAndEnsureClosed(): Promise<void> {
-    await this.submitBtn.click();
+    await this.submit();
     await this.ensureClosed();
   }
 
 
 
-  async ensureClosed(): Promise<void> {
-    await this.page.waitForTimeout(200);
-    if (await this.root.isVisible()) {
-      await this.cancelBtn.click();
+  async ensureClosed(timeoutMs: number = 10_000): Promise<void> {
+    // If dialog auto-closes after submit, this will pass fast
+    try {
+      await this.root.waitFor({ state: "hidden", timeout: 1500 });
+      return;
+    } catch {
+      // still open, try closing explicitly
     }
-    await this.expectClosed();
+
+    // Try click cancel, but tolerate the dialog detaching while clicking
+    try {
+      await this.cancelBtn.click({ timeout: 5000 });
+    } catch {
+      // ignore if it was already closing/detached
+    }
+
+    await this.root.waitFor({ state: "hidden", timeout: timeoutMs });
   }
+
 
 
   // 2) If you want to close the dialog, do it explicitly
