@@ -89,8 +89,9 @@ export class AddTaskDialog {
     await expect(this.submitBtn).toBeEnabled();
     await this.submitBtn.scrollIntoViewIfNeeded();
 
-    const isCreateTaskRequest = (url: string, method: string) => {
-      const m = method.toUpperCase();
+    const isCreateTaskResponse = (r: any) => {
+      const url = r.url();
+      const m = r.request().method().toUpperCase();
       return (
         m === "POST" &&
         (url.includes("/tasks/add") || url.includes("/api/tasks/add"))
@@ -100,24 +101,25 @@ export class AddTaskDialog {
     const isTasksAllResponse = (r: any) => {
       const url = r.url();
       const m = r.request().method().toUpperCase();
-      return m === "GET" && (url.includes("/tasks/all") || url.includes("/api/tasks/all"));
+      return (
+        m === "GET" &&
+        (url.includes("/tasks/all") || url.includes("/api/tasks/all"))
+      );
     };
 
-    const [req, allRes] = await Promise.all([
-      this.page.waitForRequest((r) => isCreateTaskRequest(r.url(), r.method()), {
-        timeout: timeoutMs,
-      }),
+    const [createRes, allRes] = await Promise.all([
+      this.page.waitForResponse(isCreateTaskResponse, { timeout: timeoutMs }),
       this.page.waitForResponse(isTasksAllResponse, { timeout: timeoutMs }),
       this.submitBtn.click(),
     ]);
 
-    const res = await req.response();
-    const status = res?.status() ?? 0;
+    const status = createRes.status();
+    const url = createRes.url();
 
     let created: unknown;
     try {
-      const ct = res?.headers()?.["content-type"] || "";
-      if (ct.includes("application/json")) created = await res!.json();
+      const ct = createRes.headers()?.["content-type"] || "";
+      if (ct.includes("application/json")) created = await createRes.json();
     } catch {
       // ignore
     }
@@ -130,7 +132,7 @@ export class AddTaskDialog {
       // ignore
     }
 
-    return { status, created, all, url: req.url() };
+    return { status, created, all, url };
   }
 
   async submitAndEnsureClosed(): Promise<void> {

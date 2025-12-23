@@ -53,8 +53,12 @@ function normalizeTask(input: any): Omit<Task, "_id"> {
     priority: Number(input?.priority ?? 0),
     date: String(input?.date ?? ""),
     coordinates: {
-      latitude: Number(input?.coordinates?.latitude ?? input?.coordinates?.lat ?? 0),
-      longitude: Number(input?.coordinates?.longitude ?? input?.coordinates?.lng ?? 0),
+      latitude: Number(
+        input?.coordinates?.latitude ?? input?.coordinates?.lat ?? 0
+      ),
+      longitude: Number(
+        input?.coordinates?.longitude ?? input?.coordinates?.lng ?? 0
+      ),
     },
   };
 }
@@ -87,7 +91,8 @@ export async function installTaskApiMock(
 
   if (!enabled) return { reset };
 
-  await context.route("**/*", async (route) => {
+  // Intercept only URLs that include "tasks" somewhere to reduce overhead/flakiness.
+  await context.route("**/*tasks**", async (route) => {
     const request = route.request();
     const urlStr = request.url();
 
@@ -156,7 +161,10 @@ export async function installTaskApiMock(
       return json(route, deleted ? 200 : 404, { deleted });
     }
 
-    if (method === "DELETE" && (is("/tasks/deleteAll") || is("/api/tasks/deleteAll"))) {
+    if (
+      method === "DELETE" &&
+      (is("/tasks/deleteAll") || is("/api/tasks/deleteAll"))
+    ) {
       state.tasks = [];
       return json(route, 200, { deletedAll: true });
     }
