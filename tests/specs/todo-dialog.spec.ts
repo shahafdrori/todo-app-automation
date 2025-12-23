@@ -137,9 +137,10 @@ test("user can fill the task form and click on the map with dialog open", async 
   await dialog.expectClosed();
 });
 
-test("user can submit a task", async ({ page }) => {
-  attachApiLogs(page);
+test("user can submit a task", async ({ page }, testInfo) => {
+  testInfo.setTimeout(60_000); // or 90_000 if you want extra safety
 
+  attachApiLogs(page);
   await page.goto("/");
 
   const navBar = new NavBar(page);
@@ -159,16 +160,23 @@ test("user can submit a task", async ({ page }) => {
 
   const [addRes, allRes] = await Promise.all([
     page.waitForResponse(
-      (r) => r.url().includes("/tasks/add") && r.request().method() === "POST",
-      { timeout: 45_000 }
+      (r) => r.url().includes("/tasks/add") && r.request().method() === "POST"
     ),
     page.waitForResponse(
-      (r) => r.url().includes("/tasks/all") && r.request().method() === "GET",
-      { timeout: 45_000 }
+      (r) => r.url().includes("/tasks/all") && r.request().method() === "GET"
     ),
-    dialog.submitAndEnsureClosed(),
+    dialog.submit(),
   ]);
+
+  expect(addRes.ok()).toBeTruthy();
+  expect(allRes.ok()).toBeTruthy();
+
+  const allJson = await allRes.json();
+  expect((allJson as any[]).some((t) => t?.name === taskData.name)).toBeTruthy();
+
+  await dialog.ensureClosed();
 });
+
 
 test("user can fill the task form and set coordinates from the map", async ({ page }) => {
   await page.goto("/");
