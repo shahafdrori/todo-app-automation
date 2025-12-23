@@ -48,6 +48,12 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Debug env (safe)
+        run: |
+          echo "CI=$CI"
+          echo "MOCK_API=$MOCK_API"
+          echo "BASE_URL=$BASE_URL"
+
       - name: Prepare artifact folders
         run: mkdir -p test-results blob-report playwright-report
 

@@ -157,7 +157,7 @@ test("user can submit a task", async ({ page }, testInfo) => {
   await mapPage.expectMapVisible();
   await mapPage.clickRandomAndReadCoordinates();
 
-  // ✅ submit waits for POST + GET /tasks/all (inside the method now)
+  // submit waits for POST + GET /tasks/all (inside the method now)
   const { status, all } = await dialog.submitAndWaitForCreate();
   expect(status).toBe(200);
 

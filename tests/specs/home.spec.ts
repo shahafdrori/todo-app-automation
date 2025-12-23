@@ -1,4 +1,5 @@
-import { test, expect } from '../fixtures/test-fixtures';
+//tests/specs/home.spec.ts
+import { test } from "../fixtures/test-fixtures";
 import { NavBar } from "../components/navBar";
 
 test("navigate between tabs", async ({ page }) => {

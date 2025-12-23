@@ -1,4 +1,4 @@
-// tests/mocks/tasksApiMock.ts
+//tests/mocks/tasksApiMock.ts
 import type { BrowserContext, Route, Request } from "@playwright/test";
 
 export type Task = {
@@ -14,8 +14,7 @@ type State = {
   tasks: Task[];
 };
 
-const makeId = () =>
-  `mock-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+const makeId = () => `mock-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 
 const withCorsHeaders = () => ({
   "access-control-allow-origin": "*",
@@ -54,14 +53,14 @@ function normalizeTask(input: any): Omit<Task, "_id"> {
     priority: Number(input?.priority ?? 0),
     date: String(input?.date ?? ""),
     coordinates: {
-      latitude: Number(
-        input?.coordinates?.latitude ?? input?.coordinates?.lat ?? 0
-      ),
-      longitude: Number(
-        input?.coordinates?.longitude ?? input?.coordinates?.lng ?? 0
-      ),
+      latitude: Number(input?.coordinates?.latitude ?? input?.coordinates?.lat ?? 0),
+      longitude: Number(input?.coordinates?.longitude ?? input?.coordinates?.lng ?? 0),
     },
   };
+}
+
+function isTasksApiPath(pathname: string): boolean {
+  return pathname.includes("/tasks/") || pathname.includes("/api/tasks/");
 }
 
 /**
@@ -88,27 +87,28 @@ export async function installTaskApiMock(
 
   if (!enabled) return { reset };
 
-  // Match both:
-  // - https://.../tasks/add
-  // - https://.../api/tasks/add
-  // - anything containing /tasks/
   await context.route("**/*", async (route) => {
     const request = route.request();
     const urlStr = request.url();
 
-    // Fast exit for non-task calls
-    if (!urlStr.includes("/tasks")) {
+    let url: URL;
+    try {
+      url = new URL(urlStr);
+    } catch {
       return route.fallback();
     }
 
-    const url = new URL(urlStr);
     const path = url.pathname;
     const method = request.method().toUpperCase();
+
+    // Only intercept real API calls, not SPA routes like "/tasks-map"
+    if (!isTasksApiPath(path)) {
+      return route.fallback();
+    }
 
     // Allow preflight
     if (method === "OPTIONS") return noContent(route, 204);
 
-    // Normalize endings (handle /api/tasks/... too)
     const is = (suffix: string) => path.endsWith(suffix);
 
     if (method === "GET" && (is("/tasks/all") || is("/api/tasks/all"))) {
@@ -156,10 +156,7 @@ export async function installTaskApiMock(
       return json(route, deleted ? 200 : 404, { deleted });
     }
 
-    if (
-      method === "DELETE" &&
-      (is("/tasks/deleteAll") || is("/api/tasks/deleteAll"))
-    ) {
+    if (method === "DELETE" && (is("/tasks/deleteAll") || is("/api/tasks/deleteAll"))) {
       state.tasks = [];
       return json(route, 200, { deletedAll: true });
     }

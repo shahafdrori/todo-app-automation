@@ -7,10 +7,6 @@ import { MapPage } from "../pages/MapPage";
 import { AdminTablePage } from "../pages/AdminTablePage";
 import { buildUniqueTask } from "../data/taskData";
 
-/**
- * Helper: start from a clean state so the new task
- * will definitely appear in the first page of results.
- */
 async function clearAllTasksViaHome(page: Page) {
   const navBar = new NavBar(page);
   await navBar.navigateToTab("home");
@@ -24,7 +20,6 @@ async function clearAllTasksViaHome(page: Page) {
   page.once("dialog", (dialog) => dialog.accept());
 
   await clearAllButton.click();
-
   await page.waitForTimeout(500);
 }
 

@@ -90,11 +90,18 @@ export class AddTaskDialog {
     await this.submitBtn.scrollIntoViewIfNeeded();
 
     const isCreateTaskRequest = (url: string, method: string) => {
-      return method.toUpperCase() === "POST" && url.includes("/tasks");
+      const m = method.toUpperCase();
+      return (
+        m === "POST" &&
+        (url.includes("/tasks/add") || url.includes("/api/tasks/add"))
+      );
     };
 
-    const isTasksAllResponse = (r: any) =>
-      r.url().includes("/tasks/all") && r.request().method() === "GET";
+    const isTasksAllResponse = (r: any) => {
+      const url = r.url();
+      const m = r.request().method().toUpperCase();
+      return m === "GET" && (url.includes("/tasks/all") || url.includes("/api/tasks/all"));
+    };
 
     const [req, allRes] = await Promise.all([
       this.page.waitForRequest((r) => isCreateTaskRequest(r.url(), r.method()), {
