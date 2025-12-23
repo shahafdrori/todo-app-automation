@@ -9,10 +9,9 @@ type Fixtures = {
 };
 
 export const test = base.extend<Fixtures>({
-  // ✅ AUTO fixture: runs for every test automatically
   mockTasks: [
-    async ({ page }, use) => {
-      const mock = await installTaskApiMock(page, { initialTasks: [] });
+    async ({ context }, use) => {
+      const mock = await installTaskApiMock(context, { initialTasks: [] });
       await use(mock);
     },
     { auto: true },

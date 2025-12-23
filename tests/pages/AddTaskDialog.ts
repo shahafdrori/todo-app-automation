@@ -57,7 +57,6 @@ export class AddTaskDialog {
     const dateField = await this.form.getFieldByPath("date");
     await dateField.blur();
 
-    // WebKit/Safari safety: ensure the date value actually committed
     await expect(dateField).not.toHaveValue("", { timeout: 5000 });
   }
 
@@ -83,29 +82,42 @@ export class AddTaskDialog {
     await this.submitBtn.click();
   }
 
-  // Click submit + wait for the POST /tasks/add response
-  async submitAndWaitForCreate(): Promise<{ status: number; json?: unknown }> {
+  /**
+   * WebKit CI fix:
+   * wait on the REQUEST first (less flaky), then use its response if exists.
+   */
+  async submitAndWaitForCreate(
+    timeoutMs: number = 25_000
+  ): Promise<{ status: number; json?: unknown }> {
     await expect(this.submitBtn).toBeVisible();
     await expect(this.submitBtn).toBeEnabled();
     await this.submitBtn.scrollIntoViewIfNeeded();
 
-    const [res] = await Promise.all([
-      this.page.waitForResponse((r) => {
-        const req = r.request();
-        return req.method() === "POST" && r.url().includes("/tasks/add");
-      }),
+    const [req] = await Promise.all([
+      this.page.waitForRequest(
+        (r) => r.method() === "POST" && r.url().includes("/tasks/add"),
+        { timeout: timeoutMs }
+      ),
       this.submitBtn.click(),
     ]);
 
-    const status = res.status();
-    let json: unknown;
-    try {
-      json = await res.json();
-    } catch {
-      // ignore non-JSON
+    const res = await req.response();
+    if (!res) {
+      return { status: 0 };
     }
 
-    return { status, json };
+    const status = res.status();
+    let jsonBody: unknown;
+    try {
+      const ct = res.headers()["content-type"] || "";
+      if (ct.includes("application/json")) {
+        jsonBody = await res.json();
+      }
+    } catch {
+      // ignore
+    }
+
+    return { status, json: jsonBody };
   }
 
   async submitAndEnsureClosed(): Promise<void> {
@@ -118,13 +130,13 @@ export class AddTaskDialog {
       await this.root.waitFor({ state: "hidden", timeout: 1500 });
       return;
     } catch {
-      // still open, try closing explicitly
+      // still open
     }
 
     try {
       await this.cancelBtn.click({ timeout: 5000 });
     } catch {
-      // ignore if it was already closing/detached
+      // ignore
     }
 
     await this.root.waitFor({ state: "hidden", timeout: timeoutMs });
