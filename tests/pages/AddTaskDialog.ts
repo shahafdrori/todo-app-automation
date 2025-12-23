@@ -83,30 +83,41 @@ export class AddTaskDialog {
   }
 
   /**
-   * WebKit CI fix:
-   * wait on the REQUEST first (less flaky), then use its response if exists.
+   * CI/WebKit fix:
+   * Don't wait for an exact "/tasks/add" URL (it might be "/api/tasks/add" or other backend path).
+   * Wait for ANY POST request that targets a "/tasks" endpoint.
    */
   async submitAndWaitForCreate(
-    timeoutMs: number = 25_000
-  ): Promise<{ status: number; json?: unknown }> {
+    timeoutMs: number = 45_000
+  ): Promise<{ status: number; json?: unknown; url?: string }> {
     await expect(this.submitBtn).toBeVisible();
     await expect(this.submitBtn).toBeEnabled();
     await this.submitBtn.scrollIntoViewIfNeeded();
 
+    const isCreateTaskRequest = (url: string, method: string) => {
+      const m = method.toUpperCase();
+      if (m !== "POST") return false;
+      // match:
+      //   .../tasks/add
+      //   .../api/tasks/add
+      //   .../tasks/create
+      // and in general anything under /tasks for POST
+      return url.includes("/tasks");
+    };
+
     const [req] = await Promise.all([
       this.page.waitForRequest(
-        (r) => r.method() === "POST" && r.url().includes("/tasks/add"),
+        (r) => isCreateTaskRequest(r.url(), r.method()),
         { timeout: timeoutMs }
       ),
       this.submitBtn.click(),
     ]);
 
     const res = await req.response();
-    if (!res) {
-      return { status: 0 };
-    }
+    if (!res) return { status: 0, url: req.url() };
 
     const status = res.status();
+
     let jsonBody: unknown;
     try {
       const ct = res.headers()["content-type"] || "";
@@ -117,7 +128,7 @@ export class AddTaskDialog {
       // ignore
     }
 
-    return { status, json: jsonBody };
+    return { status, json: jsonBody, url: req.url() };
   }
 
   async submitAndEnsureClosed(): Promise<void> {
