@@ -157,19 +157,13 @@ test("user can submit a task", async ({ page }, testInfo) => {
   await mapPage.expectMapVisible();
   await mapPage.clickRandomAndReadCoordinates();
 
-  // ✅ WebKit-safe: confirm POST /tasks/add actually happened
-  const { status } = await dialog.submitAndWaitForCreate();
+  // ✅ submit waits for POST + GET /tasks/all (inside the method now)
+  const { status, all } = await dialog.submitAndWaitForCreate();
   expect(status).toBe(200);
 
-  // ✅ then confirm the list refresh happened
-  const allRes = await page.waitForResponse(
-    (r) => r.url().includes("/tasks/all") && r.request().method() === "GET",
-    { timeout: 30_000 }
-  );
-  expect(allRes.ok()).toBeTruthy();
+  expect(Array.isArray(all)).toBeTruthy();
+  expect((all as any[]).some((t) => t?.name === taskData.name)).toBeTruthy();
 
-  const allJson = await allRes.json();
-  expect((allJson as any[]).some((t) => t?.name === taskData.name)).toBeTruthy();
 
   await dialog.ensureClosed();
 });

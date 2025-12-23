@@ -82,53 +82,48 @@ export class AddTaskDialog {
     await this.submitBtn.click();
   }
 
-  /**
-   * CI/WebKit fix:
-   * Don't wait for an exact "/tasks/add" URL (it might be "/api/tasks/add" or other backend path).
-   * Wait for ANY POST request that targets a "/tasks" endpoint.
-   */
   async submitAndWaitForCreate(
     timeoutMs: number = 45_000
-  ): Promise<{ status: number; json?: unknown; url?: string }> {
+  ): Promise<{ status: number; created?: unknown; all?: unknown; url?: string }> {
     await expect(this.submitBtn).toBeVisible();
     await expect(this.submitBtn).toBeEnabled();
     await this.submitBtn.scrollIntoViewIfNeeded();
 
     const isCreateTaskRequest = (url: string, method: string) => {
-      const m = method.toUpperCase();
-      if (m !== "POST") return false;
-      // match:
-      //   .../tasks/add
-      //   .../api/tasks/add
-      //   .../tasks/create
-      // and in general anything under /tasks for POST
-      return url.includes("/tasks");
+      return method.toUpperCase() === "POST" && url.includes("/tasks");
     };
 
-    const [req] = await Promise.all([
-      this.page.waitForRequest(
-        (r) => isCreateTaskRequest(r.url(), r.method()),
-        { timeout: timeoutMs }
-      ),
+    const isTasksAllResponse = (r: any) =>
+      r.url().includes("/tasks/all") && r.request().method() === "GET";
+
+    const [req, allRes] = await Promise.all([
+      this.page.waitForRequest((r) => isCreateTaskRequest(r.url(), r.method()), {
+        timeout: timeoutMs,
+      }),
+      this.page.waitForResponse(isTasksAllResponse, { timeout: timeoutMs }),
       this.submitBtn.click(),
     ]);
 
     const res = await req.response();
-    if (!res) return { status: 0, url: req.url() };
+    const status = res?.status() ?? 0;
 
-    const status = res.status();
-
-    let jsonBody: unknown;
+    let created: unknown;
     try {
-      const ct = res.headers()["content-type"] || "";
-      if (ct.includes("application/json")) {
-        jsonBody = await res.json();
-      }
+      const ct = res?.headers()?.["content-type"] || "";
+      if (ct.includes("application/json")) created = await res!.json();
     } catch {
       // ignore
     }
 
-    return { status, json: jsonBody, url: req.url() };
+    let all: unknown;
+    try {
+      const ct = allRes.headers()?.["content-type"] || "";
+      if (ct.includes("application/json")) all = await allRes.json();
+    } catch {
+      // ignore
+    }
+
+    return { status, created, all, url: req.url() };
   }
 
   async submitAndEnsureClosed(): Promise<void> {
