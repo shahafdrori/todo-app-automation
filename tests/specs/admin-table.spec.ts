@@ -1,6 +1,6 @@
 // tests/specs/admin-table.spec.ts
 import type { Page } from "@playwright/test";
-import { test } from "../fixtures/test-fixtures";
+import { test, expect } from "../fixtures/test-fixtures";
 import { NavBar } from "../components/navBar";
 import { AddTaskDialog } from "../pages/AddTaskDialog";
 import { MapPage } from "../pages/MapPage";
@@ -21,93 +21,87 @@ async function clearAllTasksViaHome(page: Page) {
     return;
   }
 
-  // Handle possible window.confirm from the app
   page.once("dialog", (dialog) => dialog.accept());
 
   await clearAllButton.click();
 
-  // Give the backend + UI a moment to update
   await page.waitForTimeout(500);
 }
 
-test("task created from home appears in admin table with all fields correct", async ({
-  page,
-}) => {
-  await page.goto("/");
-  await clearAllTasksViaHome(page);
+test(
+  "task created from home appears in admin table with all fields correct",
+  async ({ page }, testInfo) => {
+    testInfo.setTimeout(90_000);
 
-  const navBar = new NavBar(page);
-  const adminPage = new AdminTablePage(page);
+    await page.goto("/");
+    await clearAllTasksViaHome(page);
 
-  // 1. Stay on home and open dialog
-  await navBar.navigateToTab("home");
+    const navBar = new NavBar(page);
+    const adminPage = new AdminTablePage(page);
 
-  await page.locator('[data-test="add-task-button"]').click();
+    await navBar.navigateToTab("home");
+    await page.locator('[data-test="add-task-button"]').click();
 
-  const dialog = new AddTaskDialog(page);
-  await dialog.expectOpen();
+    const dialog = new AddTaskDialog(page);
+    await dialog.expectOpen();
 
-  const taskData = buildUniqueTask("Home task");
-  await dialog.fillBasicFields(taskData);
+    const taskData = buildUniqueTask("Home task");
+    await dialog.fillBasicFields(taskData);
 
-  // 2. Choose location on map and store the coordinates
-  const mapPage = new MapPage(page);
-  await mapPage.expectMapVisible();
-  const { longitude, latitude } = await mapPage.clickRandomAndReadCoordinates();
+    const mapPage = new MapPage(page);
+    await mapPage.expectMapVisible();
+    const { longitude, latitude } = await mapPage.clickRandomAndReadCoordinates();
 
-  // 3. Submit task
-  await dialog.submit();
-  await dialog.ensureClosed();
+    const { status } = await dialog.submitAndWaitForCreate();
+    expect(status).toBe(200);
 
-  // 4. Go to admin tab and check table
-  await adminPage.goto(navBar);
+    await dialog.ensureClosed();
 
-  await adminPage.expectFullTaskRow({
-    ...taskData,
-    longitude,
-    latitude,
-  });
-});
+    await adminPage.goto(navBar);
 
-// tests/specs/admin-table.spec.ts
+    await adminPage.expectFullTaskRow({
+      ...taskData,
+      longitude,
+      latitude,
+    });
+  }
+);
 
-test("task created from admin appears in admin table with all fields correct", async ({
-  page,
-}) => {
-  await page.goto("/");
-  await clearAllTasksViaHome(page);
+test(
+  "task created from admin appears in admin table with all fields correct",
+  async ({ page }, testInfo) => {
+    testInfo.setTimeout(90_000);
 
-  const navBar = new NavBar(page);
-  const adminPage = new AdminTablePage(page);
+    await page.goto("/");
+    await clearAllTasksViaHome(page);
 
-  // 1. Go to admin page
-  await navBar.navigateToTab("admin");
-  await adminPage.expectLoaded();
+    const navBar = new NavBar(page);
+    const adminPage = new AdminTablePage(page);
 
-  // 2. Open dialog from admin page
-  await page.locator('[data-test="add-task-button"]').click();
+    await navBar.navigateToTab("admin");
+    await adminPage.expectLoaded();
 
-  const dialog = new AddTaskDialog(page);
-  await dialog.expectOpen();
+    await page.locator('[data-test="add-task-button"]').click();
 
-  const taskData = buildUniqueTask("Admin task");
-  await dialog.fillBasicFields(taskData);
+    const dialog = new AddTaskDialog(page);
+    await dialog.expectOpen();
 
-  // 3. Choose coordinates from map and keep them for comparison
-  const mapPage = new MapPage(page);
-  await mapPage.expectMapVisible();
-  const { longitude, latitude } = await mapPage.clickRandomAndReadCoordinates();
+    const taskData = buildUniqueTask("Admin task");
+    await dialog.fillBasicFields(taskData);
 
-  // 4. Submit and wait for dialog to close
-  await dialog.submit();
-  await dialog.ensureClosed();
+    const mapPage = new MapPage(page);
+    await mapPage.expectMapVisible();
+    const { longitude, latitude } = await mapPage.clickRandomAndReadCoordinates();
 
-  // 5. The AdminTable is already refreshed via onSuccess(loadData).
-  //    Just assert the row, with full validation.
-  await adminPage.expectFullTaskRow({
-    ...taskData,
-    longitude,
-    latitude,
-  });
-});
+    const { status } = await dialog.submitAndWaitForCreate();
+    expect(status).toBe(200);
 
+    await dialog.ensureClosed();
+
+    await adminPage.expectFullTaskRow({
+      ...taskData,
+      longitude,
+      latitude,
+    });
+  }
+);

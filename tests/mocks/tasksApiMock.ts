@@ -1,153 +1,138 @@
-// tests/mocks/tasksApiMock.ts
-import type { Page, Route } from "@playwright/test";
+// tests/mocks/taskApiMock.ts
+import type { Page, Route, Request } from "@playwright/test";
 
-type AnyTask = Record<string, any>;
+export type Task = {
+  _id: string;
+  name: string;
+  subject: string;
+  priority: number;
+  date: string; // can be MDY from UI or ISO; we store as-is
+  coordinates: { latitude: number; longitude: number };
+};
 
-function makeId() {
-  return `mock-${Date.now()}-${Math.random().toString(16).slice(2)}`;
-}
+type State = {
+  tasks: Task[];
+};
 
-function corsHeaders() {
-  return {
-    "access-control-allow-origin": "*",
-    "access-control-allow-methods": "GET,POST,PUT,DELETE,OPTIONS",
-    "access-control-allow-headers": "content-type",
-  };
-}
+const makeId = () => `mock-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 
-function lastPathSegment(url: string): string | null {
+const json = (route: Route, status: number, body: unknown) =>
+  route.fulfill({
+    status,
+    contentType: "application/json; charset=utf-8",
+    body: JSON.stringify(body),
+    headers: {
+      "access-control-allow-origin": "*",
+      "access-control-allow-headers": "*",
+      "access-control-allow-methods": "GET,POST,PUT,DELETE,OPTIONS",
+    },
+  });
+
+const noContent = (route: Route, status = 204) =>
+  route.fulfill({
+    status,
+    headers: {
+      "access-control-allow-origin": "*",
+      "access-control-allow-headers": "*",
+      "access-control-allow-methods": "GET,POST,PUT,DELETE,OPTIONS",
+    },
+  });
+
+async function readJsonBody<T>(request: Request): Promise<T | null> {
   try {
-    const u = new URL(url);
-    const parts = u.pathname.split("/").filter(Boolean);
-    return parts.at(-1) ?? null;
+    const raw = request.postData();
+    if (!raw) return null;
+    return JSON.parse(raw) as T;
   } catch {
     return null;
   }
 }
 
-export async function attachTasksApiMock(page: Page) {
-  const ctx = page.context();
-  const tasks: AnyTask[] = [];
+function normalizeTask(input: any): Omit<Task, "_id"> {
+  return {
+    name: String(input?.name ?? ""),
+    subject: String(input?.subject ?? ""),
+    priority: Number(input?.priority ?? 0),
+    date: String(input?.date ?? ""),
+    coordinates: {
+      latitude: Number(input?.coordinates?.latitude ?? input?.coordinates?.lat ?? 0),
+      longitude: Number(input?.coordinates?.longitude ?? input?.coordinates?.lng ?? 0),
+    },
+  };
+}
 
-  const handleOptions = async (route: Route) => {
-    if (route.request().method() === "OPTIONS") {
-      return route.fulfill({ status: 204, headers: corsHeaders() });
-    }
-    return null;
+export async function installTaskApiMock(
+  page: Page,
+  options?: {
+    initialTasks?: Task[];
+    enabled?: boolean;
+  }
+): Promise<{ reset: (tasks?: Task[]) => void }> {
+  const enabled =
+    options?.enabled ?? String(process.env.MOCK_API).toLowerCase() === "true";
+
+  const state: State = {
+    tasks: (options?.initialTasks ?? []).map((t) => ({ ...t })),
   };
 
-  // GET /tasks/all (allow query params)
-  await ctx.route("**/tasks/all**", async (route: Route) => {
-    const opt = await handleOptions(route);
-    if (opt) return;
+  const reset = (tasks?: Task[]) => {
+    state.tasks = (tasks ?? []).map((t) => ({ ...t }));
+  };
 
-    if (route.request().method() !== "GET") return route.fallback();
+  if (!enabled) return { reset };
 
-    await route.fulfill({
-      status: 200,
-      contentType: "application/json",
-      headers: corsHeaders(),
-      body: JSON.stringify(tasks),
-    });
-  });
+  await page.route("**/tasks/**", async (route) => {
+    const request = route.request();
+    const url = new URL(request.url());
+    const path = url.pathname;
+    const method = request.method().toUpperCase();
 
-  // POST /tasks/add (allow query params)
-  await ctx.route("**/tasks/add**", async (route: Route) => {
-    const opt = await handleOptions(route);
-    if (opt) return;
+    if (method === "OPTIONS") return noContent(route, 204);
 
-    if (route.request().method() !== "POST") return route.fallback();
-
-    let body: any = {};
-    try {
-      body = route.request().postDataJSON();
-    } catch {}
-
-    const created = { ...body, _id: body?._id ?? makeId() };
-    tasks.push(created);
-
-    await route.fulfill({
-      status: 200,
-      contentType: "application/json",
-      headers: corsHeaders(),
-      body: JSON.stringify(created),
-    });
-  });
-
-  // DELETE /tasks/deleteAll (register BEFORE delete/*)
-  await ctx.route("**/tasks/deleteAll**", async (route: Route) => {
-    const opt = await handleOptions(route);
-    if (opt) return;
-
-    if (route.request().method() !== "DELETE") return route.fallback();
-
-    const deletedCount = tasks.length;
-    tasks.length = 0;
-
-    await route.fulfill({
-      status: 200,
-      contentType: "application/json",
-      headers: corsHeaders(),
-      body: JSON.stringify({ ok: true, deletedCount }),
-    });
-  });
-
-  // PUT /tasks/update/:id
-  await ctx.route("**/tasks/update/**", async (route: Route) => {
-    const opt = await handleOptions(route);
-    if (opt) return;
-
-    if (route.request().method() !== "PUT") return route.fallback();
-
-    const id = lastPathSegment(route.request().url());
-    if (!id) {
-      return route.fulfill({ status: 400, headers: corsHeaders(), body: "Missing id" });
+    if (method === "GET" && path.endsWith("/tasks/all")) {
+      return json(route, 200, state.tasks);
     }
 
-    let patch: any = {};
-    try {
-      patch = route.request().postDataJSON();
-    } catch {}
-
-    const idx = tasks.findIndex((t) => String(t._id) === String(id));
-    if (idx === -1) {
-      return route.fulfill({ status: 404, headers: corsHeaders(), body: "Not found" });
+    if (method === "POST" && path.endsWith("/tasks/add")) {
+      const body = await readJsonBody<any>(request);
+      const data = normalizeTask(body);
+      const created: Task = { _id: makeId(), ...data };
+      state.tasks.push(created);
+      return json(route, 200, created);
     }
 
-    tasks[idx] = { ...tasks[idx], ...patch, _id: tasks[idx]._id };
+    if (method === "PUT" && path.includes("/tasks/update/")) {
+      const id = path.split("/tasks/update/")[1] ?? "";
+      const body = await readJsonBody<any>(request);
+      const data = normalizeTask(body);
 
-    await route.fulfill({
-      status: 200,
-      contentType: "application/json",
-      headers: corsHeaders(),
-      body: JSON.stringify(tasks[idx]),
+      const idx = state.tasks.findIndex((t) => t._id === id);
+      if (idx === -1) return json(route, 404, { error: "Task not found" });
+
+      const updated: Task = { _id: id, ...data };
+      state.tasks[idx] = updated;
+      return json(route, 200, updated);
+    }
+
+    if (method === "DELETE" && path.includes("/tasks/delete/")) {
+      const id = path.split("/tasks/delete/")[1] ?? "";
+      const before = state.tasks.length;
+      state.tasks = state.tasks.filter((t) => t._id !== id);
+      const deleted = before !== state.tasks.length;
+      return json(route, deleted ? 200 : 404, { deleted });
+    }
+
+    if (method === "DELETE" && path.endsWith("/tasks/deleteAll")) {
+      state.tasks = [];
+      return json(route, 200, { deletedAll: true });
+    }
+
+    return json(route, 501, {
+      error: "MOCK_API: unhandled endpoint",
+      method,
+      path,
     });
   });
 
-  // DELETE /tasks/delete/:id
-  await ctx.route("**/tasks/delete/**", async (route: Route) => {
-    const opt = await handleOptions(route);
-    if (opt) return;
-
-    if (route.request().method() !== "DELETE") return route.fallback();
-
-    const id = lastPathSegment(route.request().url());
-    if (!id) {
-      return route.fulfill({ status: 400, headers: corsHeaders(), body: "Missing id" });
-    }
-
-    const idx = tasks.findIndex((t) => String(t._id) === String(id));
-    if (idx === -1) {
-      return route.fulfill({ status: 404, headers: corsHeaders(), body: "Not found" });
-    }
-
-    const [deleted] = tasks.splice(idx, 1);
-
-    await route.fulfill({
-      status: 200,
-      contentType: "application/json",
-      headers: corsHeaders(),
-      body: JSON.stringify({ ok: true, deletedId: deleted._id }),
-    });
-  });
+  return { reset };
 }

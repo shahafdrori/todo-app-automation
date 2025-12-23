@@ -1,5 +1,5 @@
 // tests/pages/AddTaskDialog.ts
-import { Page, Locator, expect, APIResponse } from "@playwright/test";
+import { Page, Locator, expect } from "@playwright/test";
 import { FormFields } from "../helpers/FormFields";
 
 export type TaskFormFields = {
@@ -25,7 +25,6 @@ export class AddTaskDialog {
   readonly root: Locator;
   readonly form: FormFields<TaskFormFields>;
 
-  // keep buttons scoped to the dialog (not the whole page)
   private readonly submitBtn: Locator;
   private readonly cancelBtn: Locator;
 
@@ -43,8 +42,6 @@ export class AddTaskDialog {
   }
 
   async expectClosed(): Promise<void> {
-    // Only use this after you explicitly close (cancel/X),
-    // NOT after submit unless the product is supposed to auto-close.
     await expect(this.root).toBeHidden({ timeout: 10000 });
   }
 
@@ -54,11 +51,14 @@ export class AddTaskDialog {
     await this.form.fillTextField("name", name);
     await this.form.setPriority("priority", priority);
     await this.form.selectOption("subject", subject);
+
     await this.form.fillTextFieldAndEnter("date", date);
+
     const dateField = await this.form.getFieldByPath("date");
-    await dateField.blur(); // or: await this.page.keyboard.press("Tab");
+    await dateField.blur();
 
-
+    // WebKit/Safari safety: ensure the date value actually committed
+    await expect(dateField).not.toHaveValue("", { timeout: 5000 });
   }
 
   async setCoordinatesManually(lng: string, lat: string): Promise<void> {
@@ -76,13 +76,19 @@ export class AddTaskDialog {
     };
   }
 
-async submit(): Promise<void> {
-  await this.submitBtn.click();
-}
+  async submit(): Promise<void> {
+    await expect(this.submitBtn).toBeVisible();
+    await expect(this.submitBtn).toBeEnabled();
+    await this.submitBtn.scrollIntoViewIfNeeded();
+    await this.submitBtn.click();
+  }
 
-
-  // 1) Click submit + wait for the POST /tasks/add response (this answers “was it sent?”)
+  // Click submit + wait for the POST /tasks/add response
   async submitAndWaitForCreate(): Promise<{ status: number; json?: unknown }> {
+    await expect(this.submitBtn).toBeVisible();
+    await expect(this.submitBtn).toBeEnabled();
+    await this.submitBtn.scrollIntoViewIfNeeded();
+
     const [res] = await Promise.all([
       this.page.waitForResponse((r) => {
         const req = r.request();
@@ -107,10 +113,7 @@ async submit(): Promise<void> {
     await this.ensureClosed();
   }
 
-
-
   async ensureClosed(timeoutMs: number = 10_000): Promise<void> {
-    // If dialog auto-closes after submit, this will pass fast
     try {
       await this.root.waitFor({ state: "hidden", timeout: 1500 });
       return;
@@ -118,7 +121,6 @@ async submit(): Promise<void> {
       // still open, try closing explicitly
     }
 
-    // Try click cancel, but tolerate the dialog detaching while clicking
     try {
       await this.cancelBtn.click({ timeout: 5000 });
     } catch {
@@ -128,11 +130,7 @@ async submit(): Promise<void> {
     await this.root.waitFor({ state: "hidden", timeout: timeoutMs });
   }
 
-
-
-  // 2) If you want to close the dialog, do it explicitly
   async cancel(): Promise<void> {
     await this.cancelBtn.click();
   }
 }
-

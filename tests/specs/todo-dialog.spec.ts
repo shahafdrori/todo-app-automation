@@ -7,8 +7,6 @@ import { buildUniqueTask } from "../data/taskData";
 
 import type { Page, Request } from "@playwright/test";
 
-
-
 function formatDateMDY(date: Date): string {
   const mm = String(date.getMonth() + 1).padStart(2, "0");
   const dd = String(date.getDate()).padStart(2, "0");
@@ -21,7 +19,6 @@ function futureDateMDY(daysAhead = 1): string {
   d.setDate(d.getDate() + daysAhead);
   return formatDateMDY(d);
 }
-
 
 function attachApiLogs(page: Page) {
   const flag = "__apiLogsAttached__";
@@ -111,7 +108,9 @@ test("user can fill the task form and cancel", async ({ page }) => {
   await dialog.expectClosed();
 });
 
-test("user can fill the task form and click on the map with dialog open", async ({ page }) => {
+test("user can fill the task form and click on the map with dialog open", async ({
+  page,
+}) => {
   await page.goto("/");
   const navBar = new NavBar(page);
   await navBar.navigateToTab("home");
@@ -138,7 +137,7 @@ test("user can fill the task form and click on the map with dialog open", async 
 });
 
 test("user can submit a task", async ({ page }, testInfo) => {
-  testInfo.setTimeout(60_000); // or 90_000 if you want extra safety
+  testInfo.setTimeout(60_000);
 
   attachApiLogs(page);
   await page.goto("/");
@@ -158,17 +157,15 @@ test("user can submit a task", async ({ page }, testInfo) => {
   await mapPage.expectMapVisible();
   await mapPage.clickRandomAndReadCoordinates();
 
-  const [addRes, allRes] = await Promise.all([
-    page.waitForResponse(
-      (r) => r.url().includes("/tasks/add") && r.request().method() === "POST"
-    ),
-    page.waitForResponse(
-      (r) => r.url().includes("/tasks/all") && r.request().method() === "GET"
-    ),
-    dialog.submit(),
-  ]);
+  // ✅ WebKit-safe: confirm POST /tasks/add actually happened
+  const { status } = await dialog.submitAndWaitForCreate();
+  expect(status).toBe(200);
 
-  expect(addRes.ok()).toBeTruthy();
+  // ✅ then confirm the list refresh happened
+  const allRes = await page.waitForResponse(
+    (r) => r.url().includes("/tasks/all") && r.request().method() === "GET",
+    { timeout: 30_000 }
+  );
   expect(allRes.ok()).toBeTruthy();
 
   const allJson = await allRes.json();
@@ -177,8 +174,9 @@ test("user can submit a task", async ({ page }, testInfo) => {
   await dialog.ensureClosed();
 });
 
-
-test("user can fill the task form and set coordinates from the map", async ({ page }) => {
+test("user can fill the task form and set coordinates from the map", async ({
+  page,
+}) => {
   await page.goto("/");
   const navBar = new NavBar(page);
   await navBar.navigateToTab("home");

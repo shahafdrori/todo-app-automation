@@ -1,14 +1,22 @@
-import { test as base } from "@playwright/test";
-import { attachTasksApiMock } from "../mocks/tasksApiMock";
+// tests/fixtures/test-fixtures.ts
+import { test as base, expect as baseExpect } from "@playwright/test";
+import { installTaskApiMock, type Task } from "../mocks/tasksApiMock";
 
-export const test = base.extend({
-  page: async ({ page }, use) => {
-    const shouldMock = process.env.MOCK_API === "true";
-    if (shouldMock) {
-      await attachTasksApiMock(page);
-    }
-    await use(page);
-  },
+type Fixtures = {
+  mockTasks: {
+    reset: (tasks?: Task[]) => void;
+  };
+};
+
+export const test = base.extend<Fixtures>({
+  // ✅ AUTO fixture: runs for every test automatically
+  mockTasks: [
+    async ({ page }, use) => {
+      const mock = await installTaskApiMock(page, { initialTasks: [] });
+      await use(mock);
+    },
+    { auto: true },
+  ],
 });
 
-export { expect } from "@playwright/test";
+export const expect = baseExpect;
