@@ -2,7 +2,7 @@
 import { expect, Locator, Page } from "@playwright/test";
 
 /**
- * Generic helper for HTML tables (like your AdminTask table).
+ * Generic helper for HTML tables (like my AdminTask table).
  *
  * Assumes a standard structure:
  *   <table>

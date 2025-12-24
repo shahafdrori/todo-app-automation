@@ -1,4 +1,4 @@
-//tests/fixtures/test-fixtures.ts
+// tests/fixtures/test-fixtures.ts
 import { test as base, expect as baseExpect } from "@playwright/test";
 import { installTaskApiMock, type Task } from "../mocks/tasksApiMock";
 
@@ -8,9 +8,21 @@ type Fixtures = {
   };
 };
 
+const isMockEnabled = () =>
+  String(process.env.MOCK_API).toLowerCase() === "true";
+
 export const test = base.extend<Fixtures>({
   mockTasks: [
     async ({ context }, use) => {
+      // If MOCK_API is not enabled, do NOTHING (real backend/DB mode).
+      if (!isMockEnabled()) {
+        await use({ reset: () => {} });
+        return;
+      }
+
+      // ---- MOCK MODE ONLY ----
+      // Rewrite hardcoded backend calls (http://localhost:3000) to the current origin
+      // so mocks work the same on localhost and on Vercel.
       await context.addInitScript(() => {
         const FROM = "http://localhost:3000";
 

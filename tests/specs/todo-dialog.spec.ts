@@ -157,13 +157,13 @@ test("user can submit a task", async ({ page }, testInfo) => {
   await mapPage.expectMapVisible();
   await mapPage.clickRandomAndReadCoordinates();
 
-  // submit waits for POST + GET /tasks/all (inside the method now)
+  // Real backend returns 201 Created, mock returns 200 -> accept any 2xx.
   const { status, all } = await dialog.submitAndWaitForCreate();
-  expect(status).toBe(200);
+  expect(status).toBeGreaterThanOrEqual(200);
+  expect(status).toBeLessThan(300);
 
   expect(Array.isArray(all)).toBeTruthy();
   expect((all as any[]).some((t) => t?.name === taskData.name)).toBeTruthy();
-
 
   await dialog.ensureClosed();
 });

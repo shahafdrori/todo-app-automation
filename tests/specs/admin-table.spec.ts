@@ -45,10 +45,12 @@ test(
 
     const mapPage = new MapPage(page);
     await mapPage.expectMapVisible();
-    const { longitude, latitude } = await mapPage.clickRandomAndReadCoordinates();
+    const { longitude, latitude } =
+      await mapPage.clickRandomAndReadCoordinates();
 
     const { status } = await dialog.submitAndWaitForCreate();
-    expect(status).toBe(200);
+    expect(status).toBeGreaterThanOrEqual(200);
+    expect(status).toBeLessThan(300);
 
     await dialog.ensureClosed();
 
@@ -86,10 +88,12 @@ test(
 
     const mapPage = new MapPage(page);
     await mapPage.expectMapVisible();
-    const { longitude, latitude } = await mapPage.clickRandomAndReadCoordinates();
+    const { longitude, latitude } =
+      await mapPage.clickRandomAndReadCoordinates();
 
     const { status } = await dialog.submitAndWaitForCreate();
-    expect(status).toBe(200);
+    expect(status).toBeGreaterThanOrEqual(200);
+    expect(status).toBeLessThan(300);
 
     await dialog.ensureClosed();
 
