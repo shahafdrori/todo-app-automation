@@ -1,3 +1,4 @@
+//tests/helpers/Buttons.ts
 import { Page, Locator, expect } from "@playwright/test";
 
 export class Buttons<T extends Record<string, string>> {

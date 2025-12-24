@@ -1,3 +1,4 @@
+//tests/helpers/map/mapHelpers.ts
 import { Page, expect, Locator } from "@playwright/test";
 
 export const MAP_SELECTOR = '[data-test="task-map"]';
@@ -78,7 +79,7 @@ export async function clickRandomOnMapAndValidateInputs(
 
   const { x, y } = getSafeRandomPoint(box);
 
-  await page.mouse.click(x, y);
+  await page.mouse.dblclick(x, y);
 
   const lngInput = page.locator(LNG_INPUT_SELECTOR);
   const latInput = page.locator(LAT_INPUT_SELECTOR);
