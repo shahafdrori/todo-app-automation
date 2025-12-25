@@ -11,7 +11,6 @@ export type LngLat = {
   latitude: number;
 };
 
-// padding (in px) to avoid UI controls around the edges of the map
 const MAP_SAFE_PADDING = {
   top: 40,
   right: 40,
