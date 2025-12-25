@@ -3,22 +3,9 @@ import { test, expect } from "../fixtures/test-fixtures";
 import { AddTaskDialog } from "../pages/AddTaskDialog";
 import { MapPage } from "../pages/MapPage";
 import { NavBar } from "../components/navBar";
-import { buildUniqueTask } from "../data/taskData";
+import { buildUniqueTask, futureDateMDY } from "../data/taskData";
 
 import type { Page, Request } from "@playwright/test";
-
-function formatDateMDY(date: Date): string {
-  const mm = String(date.getMonth() + 1).padStart(2, "0");
-  const dd = String(date.getDate()).padStart(2, "0");
-  const yyyy = String(date.getFullYear());
-  return `${mm}/${dd}/${yyyy}`;
-}
-
-function futureDateMDY(daysAhead = 1): string {
-  const d = new Date();
-  d.setDate(d.getDate() + daysAhead);
-  return formatDateMDY(d);
-}
 
 function attachApiLogs(page: Page) {
   const flag = "__apiLogsAttached__";
@@ -157,7 +144,7 @@ test("user can submit a task", async ({ page }, testInfo) => {
   await mapPage.expectMapVisible();
   await mapPage.clickRandomAndReadCoordinates();
 
-  // Real backend returns 201 Created, mock returns 200 -> accept any 2xx.
+  // Both real backend and mock return 201 -> accept any 2xx anyway (more robust).
   const { status, all } = await dialog.submitAndWaitForCreate();
   expect(status).toBeGreaterThanOrEqual(200);
   expect(status).toBeLessThan(300);

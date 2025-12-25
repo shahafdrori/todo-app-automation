@@ -102,22 +102,33 @@ Example `.env.example` (committed):
 BASE_URL=
 MOCK_API=
 ```
+
+Important:
+- npm test runs mock mode by default (script sets MOCK_API=true)
+- To run against a real backend, use the test:real:* scripts
+
 ---
 
 ## Running tests locally
 
-### Mock mode (recommended)
+### Mock mode (default, recommended)
 
 Runs deterministically without a real backend or database:
 
 ```bash
-npm run test:mock
+npm test
 ```
 
-### Real backend mode (intended for local runs)
+### Real backend mode (local only)
 
 Runs against a real backend and database.  
-Use this only when the backend is running and the frontend is configured to point to it:
+
+Requirements:
+- Frontend running at `BASE_URL` (default `http://localhost:5173`)
+- Backend running (typically `http://localhost:3000`)
+- Frontend configured to call the backend (usually via the frontend repo `.env`)
+
+Run:
 
 ```bash
 npm run test:real
@@ -171,7 +182,7 @@ The mock is enabled automatically via a Playwright fixture, so individual tests 
 
 ## WebKit reliability fix
 
-Some deployments contain hardcoded backend URLs such as:
+Some frontend builds contain hardcoded backend URLs such as:
 
 `http://localhost:3000/...`
 

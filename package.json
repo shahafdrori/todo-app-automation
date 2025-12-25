@@ -3,9 +3,8 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "playwright test",
+    "test": "MOCK_API=true playwright test",
 
-    "test:mock": "MOCK_API=true playwright test",
     "test:mock:ci": "MOCK_API=true CI=true playwright test",
     "test:mock:flaky": "MOCK_API=true playwright test --retries=2",
     "test:mock:headed": "MOCK_API=true playwright test --headed --workers=1",
