@@ -15,7 +15,7 @@
     "test:real:headed": "MOCK_API=false playwright test --headed --workers=1",
     "test:real:debug": "MOCK_API=false playwright test --debug",
 
-    "report": "playwright show-report",
+    "report": "npx playwright show-report --port 0",
     "pw:install": "playwright install --with-deps"
   },
   "keywords": [],

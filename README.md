@@ -147,6 +147,7 @@ npm run test:mock:flaky
 Open the last HTML report:
 ```bash
 npm run report
+# Uses a random free port (--port 0) to avoid EADDRINUSE on the default 9323
 ```
 
 ---
