@@ -129,7 +129,7 @@ export async function installTaskApiMock(
       const data = normalizeTask(body);
       const created: Task = { _id: makeId(), ...data };
       state.tasks.push(created);
-      return json(route, 200, created);
+      return json(route, 201, created);
     }
 
     if (method === "PUT" && pathIncludesAny(path, API_ROUTES.tasks.updatePrefix)) {
