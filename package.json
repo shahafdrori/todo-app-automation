@@ -8,11 +8,11 @@
     "test:mock": "MOCK_API=true playwright test",
     "test:mock:ci": "MOCK_API=true CI=true playwright test",
     "test:mock:flaky": "MOCK_API=true playwright test --retries=2",
-    "test:mock:headed": "MOCK_API=true playwright test --headed",
+    "test:mock:headed": "MOCK_API=true playwright test --headed --workers=1",
     "test:mock:debug": "MOCK_API=true playwright test --debug",
 
     "test:real": "MOCK_API=false playwright test",
-    "test:real:headed": "MOCK_API=false playwright test --headed",
+    "test:real:headed": "MOCK_API=false playwright test --headed --workers=1",
     "test:real:debug": "MOCK_API=false playwright test --debug",
 
     "report": "playwright show-report",
