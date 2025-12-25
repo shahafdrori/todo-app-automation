@@ -1,6 +1,8 @@
 // tests/pages/AddTaskDialog.ts
 import { Page, Locator, expect } from "@playwright/test";
 import { FormFields } from "../helpers/FormFields";
+import { TEST_IDS } from "../data/testIds";
+import { API_ROUTES, urlIncludesAny } from "../data/apiRoutes";
 
 export type TaskFormFields = {
   name: string;
@@ -33,8 +35,8 @@ export class AddTaskDialog {
     this.root = page.getByRole("dialog");
     this.form = new FormFields<TaskFormFields>(page, this.root);
 
-    this.submitBtn = this.root.locator('[data-test="submit-button"]');
-    this.cancelBtn = this.root.locator('[data-test="cancel-button"]');
+    this.submitBtn = this.root.getByTestId(TEST_IDS.buttons.submit);
+    this.cancelBtn = this.root.getByTestId(TEST_IDS.buttons.cancel);
   }
 
   async expectOpen(): Promise<void> {
@@ -92,19 +94,13 @@ export class AddTaskDialog {
     const isCreateTaskResponse = (r: any) => {
       const url = r.url();
       const m = r.request().method().toUpperCase();
-      return (
-        m === "POST" &&
-        (url.includes("/tasks/add") || url.includes("/api/tasks/add"))
-      );
+      return m === "POST" && urlIncludesAny(url, API_ROUTES.tasks.add);
     };
 
     const isTasksAllResponse = (r: any) => {
       const url = r.url();
       const m = r.request().method().toUpperCase();
-      return (
-        m === "GET" &&
-        (url.includes("/tasks/all") || url.includes("/api/tasks/all"))
-      );
+      return m === "GET" && urlIncludesAny(url, API_ROUTES.tasks.all);
     };
 
     const [createRes, allRes] = await Promise.all([

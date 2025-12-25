@@ -1,35 +1,36 @@
 // tests/components/navBar.ts
-import { Page, expect } from "@playwright/test";
+import { Page, expect, Locator } from "@playwright/test";
 import { Buttons } from "../helpers/Buttons";
+import { TEST_IDS } from "../data/testIds";
 
 export const NAV_TABS = {
   home: {
-    selector: '[data-test="nav-home"]',
+    testId: TEST_IDS.nav.home,
     path: "/",
   },
   admin: {
-    selector: '[data-test="nav-admin"]',
+    testId: TEST_IDS.nav.admin,
     path: "/admin-page",
   },
   map: {
-    selector: '[data-test="nav-map"]',
+    testId: TEST_IDS.nav.map,
     path: "/tasks-map",
   },
 } as const;
 
 export type NavTab = keyof typeof NAV_TABS;
 
-const NAV_BUTTON_SELECTORS: Record<NavTab, string> = {
-  home: NAV_TABS.home.selector,
-  admin: NAV_TABS.admin.selector,
-  map: NAV_TABS.map.selector,
-};
-
 export class NavBar {
-  private buttons: Buttons<typeof NAV_BUTTON_SELECTORS>;
+  private readonly buttons: Buttons<Record<NavTab, Locator>>;
 
-  constructor(private page: Page) {
-    this.buttons = new Buttons(page, NAV_BUTTON_SELECTORS);
+  constructor(private readonly page: Page) {
+    const navButtons: Record<NavTab, Locator> = {
+      home: page.getByTestId(NAV_TABS.home.testId),
+      admin: page.getByTestId(NAV_TABS.admin.testId),
+      map: page.getByTestId(NAV_TABS.map.testId),
+    };
+
+    this.buttons = new Buttons(navButtons);
   }
 
   async navigateToTab(tab: NavTab): Promise<void> {

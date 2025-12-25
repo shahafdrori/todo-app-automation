@@ -6,12 +6,13 @@ import { AddTaskDialog } from "../pages/AddTaskDialog";
 import { MapPage } from "../pages/MapPage";
 import { AdminTablePage } from "../pages/AdminTablePage";
 import { buildUniqueTask } from "../data/taskData";
+import { TEST_IDS } from "../data/testIds";
 
 async function clearAllTasksViaHome(page: Page) {
   const navBar = new NavBar(page);
   await navBar.navigateToTab("home");
 
-  const clearAllButton = page.locator('[data-test="clear-all-button"]');
+  const clearAllButton = page.getByTestId(TEST_IDS.buttons.clearAll);
 
   if (!(await clearAllButton.isVisible())) {
     return;
@@ -35,7 +36,7 @@ test(
     const adminPage = new AdminTablePage(page);
 
     await navBar.navigateToTab("home");
-    await page.locator('[data-test="add-task-button"]').click();
+    await page.getByTestId(TEST_IDS.buttons.addTask).click();
 
     const dialog = new AddTaskDialog(page);
     await dialog.expectOpen();
@@ -45,8 +46,7 @@ test(
 
     const mapPage = new MapPage(page);
     await mapPage.expectMapVisible();
-    const { longitude, latitude } =
-      await mapPage.clickRandomAndReadCoordinates();
+    const { longitude, latitude } = await mapPage.clickRandomAndReadCoordinates();
 
     const { status } = await dialog.submitAndWaitForCreate();
     expect(status).toBeGreaterThanOrEqual(200);
@@ -78,7 +78,7 @@ test(
     await navBar.navigateToTab("admin");
     await adminPage.expectLoaded();
 
-    await page.locator('[data-test="add-task-button"]').click();
+    await page.getByTestId(TEST_IDS.buttons.addTask).click();
 
     const dialog = new AddTaskDialog(page);
     await dialog.expectOpen();
@@ -88,8 +88,7 @@ test(
 
     const mapPage = new MapPage(page);
     await mapPage.expectMapVisible();
-    const { longitude, latitude } =
-      await mapPage.clickRandomAndReadCoordinates();
+    const { longitude, latitude } = await mapPage.clickRandomAndReadCoordinates();
 
     const { status } = await dialog.submitAndWaitForCreate();
     expect(status).toBeGreaterThanOrEqual(200);

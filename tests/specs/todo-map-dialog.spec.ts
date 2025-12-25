@@ -2,13 +2,16 @@
 import { test, expect } from "../fixtures/test-fixtures";
 import { MapPage } from "../pages/MapPage";
 import { NavBar } from "../components/navBar";
+import { TEST_IDS } from "../data/testIds";
 
-test("select location on map fills coordinates and moves marker correctly", async ({ page }) => {
+test("select location on map fills coordinates and moves marker correctly", async ({
+  page,
+}) => {
   await page.goto("/");
   const navBar = new NavBar(page);
   await navBar.navigateToTab("home");
 
-  await page.locator('[data-test="add-task-button"]').click();
+  await page.getByTestId(TEST_IDS.buttons.addTask).click();
 
   const mapPage = new MapPage(page);
   await mapPage.expectMapVisible();
@@ -27,7 +30,7 @@ test("user can select very far location on map dialog", async ({ page }) => {
   const navBar = new NavBar(page);
   await navBar.navigateToTab("home");
 
-  await page.locator('[data-test="add-task-button"]').click();
+  await page.getByTestId(TEST_IDS.buttons.addTask).click();
 
   const mapPage = new MapPage(page);
   await mapPage.expectMapVisible();
@@ -52,7 +55,7 @@ test("zoom buttons change map view zoom", async ({ page }) => {
   const navBar = new NavBar(page);
   await navBar.navigateToTab("home");
 
-  await page.locator('[data-test="add-task-button"]').click();
+  await page.getByTestId(TEST_IDS.buttons.addTask).click();
 
   const mapPage = new MapPage(page);
   await mapPage.expectMapVisible();
@@ -81,7 +84,7 @@ test("zoom in eventually increases map view zoom", async ({ page }) => {
   const navBar = new NavBar(page);
   await navBar.navigateToTab("home");
 
-  await page.locator('[data-test="add-task-button"]').click();
+  await page.getByTestId(TEST_IDS.buttons.addTask).click();
 
   const mapPage = new MapPage(page);
   await mapPage.expectMapVisible();
@@ -101,7 +104,7 @@ test.skip("map state resets when dialog is closed and reopened", async ({ page }
   const navBar = new NavBar(page);
   await navBar.navigateToTab("home");
 
-  await page.locator('[data-test="add-task-button"]').click();
+  await page.getByTestId(TEST_IDS.buttons.addTask).click();
 
   const mapPage = new MapPage(page);
   await mapPage.expectMapVisible();
@@ -110,13 +113,13 @@ test.skip("map state resets when dialog is closed and reopened", async ({ page }
   expect(Number.isNaN(first.longitude)).toBeFalsy();
   expect(Number.isNaN(first.latitude)).toBeFalsy();
 
-  await page.locator('[data-test="cancel-button"]').click();
+  await page.getByTestId(TEST_IDS.buttons.cancel).click();
 
-  await page.locator('[data-test="add-task-button"]').click();
+  await page.getByTestId(TEST_IDS.buttons.addTask).click();
   await mapPage.expectMapVisible();
 
-  const lngInput = page.locator('[data-test="lng-input"]');
-  const latInput = page.locator('[data-test="lat-input"]');
+  const lngInput = page.getByTestId(TEST_IDS.map.lngInput);
+  const latInput = page.getByTestId(TEST_IDS.map.latInput);
 
   await expect(lngInput).toHaveValue("");
   await expect(latInput).toHaveValue("");

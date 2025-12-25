@@ -1,7 +1,7 @@
 // tests/pages/MapPage.ts
 import { Page, expect } from "@playwright/test";
 import {
-  MAP_SELECTOR,
+  MAP_TEST_ID,
   clickRandomOnMapAndValidateInputs,
   pan,
   zoomWithButtons,
@@ -15,12 +15,9 @@ export class MapPage {
   constructor(private page: Page) {}
 
   async expectMapVisible() {
-    await expect(this.page.locator(MAP_SELECTOR)).toBeVisible();
+    await expect(this.page.getByTestId(MAP_TEST_ID)).toBeVisible();
   }
 
-  /**
-   * Dialog map: click random point, validate inputs and marker.
-   */
   async clickRandomAndReadCoordinates(): Promise<LngLat> {
     return await clickRandomOnMapAndValidateInputs(this.page);
   }
@@ -41,7 +38,6 @@ export class MapPage {
     await pan(this.page, 0, pixels);
   }
 
-  // Dialog zoom via buttons
   async zoomInDialog(steps = 2) {
     await zoomWithButtons(this.page, "in", steps);
   }
@@ -50,7 +46,6 @@ export class MapPage {
     await zoomWithButtons(this.page, "out", steps);
   }
 
-  // Map tab zoom via wheel
   async zoomInWithWheel(steps = 5) {
     await zoomWithWheel(this.page, -120, steps);
   }
