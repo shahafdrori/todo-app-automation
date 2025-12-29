@@ -1,28 +1,11 @@
 // tests/specs/admin-table.spec.ts
-import type { Page } from "@playwright/test";
 import { test, expect } from "../fixtures/test-fixtures";
 import { NavBar } from "../components/navBar";
 import { AddTaskDialog } from "../pages/AddTaskDialog";
 import { MapPage } from "../pages/MapPage";
 import { AdminTablePage } from "../pages/AdminTablePage";
+import { HomePage } from "../pages/HomePage";
 import { buildUniqueTask } from "../data/taskData";
-import { TEST_IDS } from "../data/testIds";
-
-async function clearAllTasksViaHome(page: Page) {
-  const navBar = new NavBar(page);
-  await navBar.navigateToTab("home");
-
-  const clearAllButton = page.getByTestId(TEST_IDS.buttons.clearAll);
-
-  if (!(await clearAllButton.isVisible())) {
-    return;
-  }
-
-  page.once("dialog", (dialog) => dialog.accept());
-
-  await clearAllButton.click();
-  await page.waitForTimeout(500);
-}
 
 test(
   "task created from home appears in admin table with all fields correct",
@@ -30,13 +13,12 @@ test(
     testInfo.setTimeout(90_000);
 
     await page.goto("/");
-    await clearAllTasksViaHome(page);
 
     const navBar = new NavBar(page);
     const adminPage = new AdminTablePage(page);
+    const home = new HomePage(page);
 
-    await navBar.navigateToTab("home");
-    await page.getByTestId(TEST_IDS.buttons.addTask).click();
+    await home.openAddTaskDialogFromHome(navBar);
 
     const dialog = new AddTaskDialog(page);
     await dialog.expectOpen();
@@ -60,6 +42,7 @@ test(
       ...taskData,
       longitude,
       latitude,
+      strictDate: true,
     });
   }
 );
@@ -70,15 +53,11 @@ test(
     testInfo.setTimeout(90_000);
 
     await page.goto("/");
-    await clearAllTasksViaHome(page);
 
     const navBar = new NavBar(page);
     const adminPage = new AdminTablePage(page);
 
-    await navBar.navigateToTab("admin");
-    await adminPage.expectLoaded();
-
-    await page.getByTestId(TEST_IDS.buttons.addTask).click();
+    await adminPage.openAddTaskDialogFromAdmin(navBar);
 
     const dialog = new AddTaskDialog(page);
     await dialog.expectOpen();
@@ -100,6 +79,7 @@ test(
       ...taskData,
       longitude,
       latitude,
+      strictDate: true,
     });
   }
 );

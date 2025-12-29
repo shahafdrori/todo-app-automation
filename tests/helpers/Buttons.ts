@@ -1,16 +1,20 @@
 // tests/helpers/Buttons.ts
-import type { Locator } from "@playwright/test";
+import type { Locator, Page } from "@playwright/test";
 
-export class Buttons<T extends Record<string, Locator>> {
-  constructor(private readonly buttons: T) {}
+type Root = Page | Locator;
 
-  getButton(key: keyof T): Locator {
-    return this.buttons[key];
+export class Buttons<T extends Record<string, string>> {
+  constructor(private readonly root: Root, private readonly ids: T) {}
+
+  get(key: keyof T): Locator {
+    const id = this.ids[key];
+    return (this.root as any).getByTestId(id) as Locator;
   }
 
-  async clickButton(key: keyof T): Promise<void> {
-    const currentButton = this.getButton(key);
-    await currentButton.waitFor({ state: "visible", timeout: 10_000 });
-    await currentButton.click();
+  async click(key: keyof T, timeout = 10_000): Promise<void> {
+    const btn = this.get(key);
+    await btn.waitFor({ state: "visible", timeout });
+    await btn.scrollIntoViewIfNeeded();
+    await btn.click();
   }
 }

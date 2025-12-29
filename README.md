@@ -48,6 +48,7 @@ Map interactions:
 - `tests/pages/` – page objects (POM)
 - `tests/components/` – UI components (NavBar)
 - `tests/helpers/` – reusable helpers (FormFields, TableHelper, map helpers, Buttons)
+- `tests/helpers/debug/apiLogs.ts` – optional API request/response logger for local debugging (disabled in CI)
 - `tests/data/` – test data builders/utilities (unique task builder, date helpers)
 - `tests/mocks/` – in-memory mock for Tasks API
 - `tests/fixtures/` – fixtures (auto-installs mock when enabled)
@@ -88,12 +89,16 @@ Supported variables:
 - `MOCK_API` – enable/disable the in-memory Tasks API mock  
   `true` = mock mode (deterministic)  
   `false` = real backend mode (requires backend + DB)
+- `API_LOGS` – opt-in API debug logs (request/response logging)
+  `true` = enable logs 
+  `false` = disable logs (default)
 
 Example `.env`:
 
 ```ini
 BASE_URL=http://localhost:5173
 MOCK_API=true
+API_LOGS=false
 ```
 
 Example `.env.example` (committed):
@@ -101,11 +106,13 @@ Example `.env.example` (committed):
 ```ini
 BASE_URL=
 MOCK_API=
+API_LOGS=
 ```
 
 Important:
 - npm test runs mock mode by default (script sets MOCK_API=true)
 - To run against a real backend, use the test:real:* scripts
+- API logs are disabled unless you set API_LOGS=true
 
 ---
 
@@ -153,6 +160,18 @@ npm run test:real:debug
 Retry locally to reproduce flakiness:
 ```bash
 npm run test:mock:flaky
+```
+
+Enable API logs for a run:
+```bash
+# Enable API logs for any run by prefixing the command:
+API_LOGS=true <your test command>
+
+# Example: mock mode (headless)
+API_LOGS=true npm run test:mock
+
+# Example: real backend mode (headed)
+API_LOGS=true npm run test:real:headed
 ```
 
 Open the last HTML report:
@@ -217,7 +236,7 @@ CI reports:
 - Each shard uploads:
   - `blob-report` (used for merging)
   - `test-results` (screenshots, videos, traces on failure)
-- A dedicated merge job produces a single downloadable HTML report artifact:
+  - A dedicated merge job produces a single downloadable HTML report artifact:
   - `playwright-report`
 
 ---

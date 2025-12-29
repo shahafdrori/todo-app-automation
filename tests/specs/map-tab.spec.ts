@@ -2,14 +2,10 @@
 import { test, expect } from "../fixtures/test-fixtures";
 import { NavBar } from "../components/navBar";
 import { MapPage } from "../pages/MapPage";
-import { TEST_IDS } from "../data/testIds";
 
 test("user can pan and zoom on the map tab", async ({ page }) => {
   await page.goto("/");
   const navBar = new NavBar(page);
-
-  const navMap = page.getByTestId(TEST_IDS.nav.map);
-  console.log("nav-map count:", await navMap.count());
 
   await navBar.navigateToTab("map");
 
@@ -25,9 +21,6 @@ test("map tab wheel zoom changes map view zoom", async ({ page }) => {
   await page.goto("/");
   const navBar = new NavBar(page);
 
-  const navMap = page.getByTestId(TEST_IDS.nav.map);
-  console.log("nav-map count:", await navMap.count());
-
   await navBar.navigateToTab("map");
 
   const mapPage = new MapPage(page);
@@ -37,16 +30,17 @@ test("map tab wheel zoom changes map view zoom", async ({ page }) => {
   expect(zoomBefore).not.toBeNull();
 
   await mapPage.zoomOutWithWheel(5);
-  await page.waitForTimeout(300);
+
+  await expect
+    .poll(async () => await mapPage.getZoom(), { timeout: 2000 })
+    .toBeLessThan(zoomBefore!);
 
   const zoomAfterOut = await mapPage.getZoom();
   expect(zoomAfterOut).not.toBeNull();
-  expect(zoomAfterOut!).toBeLessThan(zoomBefore!);
 
   await mapPage.zoomInWithWheel(5);
-  await page.waitForTimeout(300);
 
-  const zoomAfterIn = await mapPage.getZoom();
-  expect(zoomAfterIn).not.toBeNull();
-  expect(zoomAfterIn!).toBeGreaterThan(zoomAfterOut!);
+  await expect
+    .poll(async () => await mapPage.getZoom(), { timeout: 2000 })
+    .toBeGreaterThan(zoomAfterOut!);
 });
