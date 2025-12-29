@@ -3,12 +3,21 @@ import type { Locator, Page } from "@playwright/test";
 
 type Root = Page | Locator;
 
+function isPage(root: Root): root is Page {
+  return typeof (root as Page).url === "function";
+}
+
 export class Buttons<T extends Record<string, string>> {
   constructor(private readonly root: Root, private readonly ids: T) {}
 
   get(key: keyof T): Locator {
     const id = this.ids[key];
-    return (this.root as any).getByTestId(id) as Locator;
+
+    if (isPage(this.root)) {
+      return this.root.getByTestId(id);
+    }
+
+    return this.root.getByTestId(id);
   }
 
   async click(key: keyof T, timeout = 10_000): Promise<void> {
