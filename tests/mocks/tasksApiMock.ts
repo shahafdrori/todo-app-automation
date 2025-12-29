@@ -1,5 +1,10 @@
-//tests/mocks/tasksApiMock.ts
+// tests/mocks/tasksApiMock.ts
 import type { BrowserContext, Route, Request } from "@playwright/test";
+import {
+  API_ROUTES,
+  pathEndsWithAny,
+  pathIncludesAny,
+} from "../data/apiRoutes";
 
 export type Task = {
   _id: string;
@@ -14,7 +19,8 @@ type State = {
   tasks: Task[];
 };
 
-const makeId = () => `mock-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+const makeId = () =>
+  `mock-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 
 const withCorsHeaders = () => ({
   "access-control-allow-origin": "*",
@@ -114,27 +120,22 @@ export async function installTaskApiMock(
     // Allow preflight
     if (method === "OPTIONS") return noContent(route, 204);
 
-    const is = (suffix: string) => path.endsWith(suffix);
-
-    if (method === "GET" && (is("/tasks/all") || is("/api/tasks/all"))) {
+    if (method === "GET" && pathEndsWithAny(path, API_ROUTES.tasks.all)) {
       return json(route, 200, state.tasks);
     }
 
-    if (method === "POST" && (is("/tasks/add") || is("/api/tasks/add"))) {
+    if (method === "POST" && pathEndsWithAny(path, API_ROUTES.tasks.add)) {
       const body = await readJsonBody<any>(request);
       const data = normalizeTask(body);
       const created: Task = { _id: makeId(), ...data };
       state.tasks.push(created);
-      return json(route, 200, created);
+      return json(route, 201, created);
     }
 
-    if (
-      method === "PUT" &&
-      (path.includes("/tasks/update/") || path.includes("/api/tasks/update/"))
-    ) {
+    if (method === "PUT" && pathIncludesAny(path, API_ROUTES.tasks.updatePrefix)) {
       const id =
-        path.split("/tasks/update/")[1] ??
-        path.split("/api/tasks/update/")[1] ??
+        path.split(API_ROUTES.tasks.updatePrefix[0])[1] ??
+        path.split(API_ROUTES.tasks.updatePrefix[1])[1] ??
         "";
       const body = await readJsonBody<any>(request);
       const data = normalizeTask(body);
@@ -149,11 +150,11 @@ export async function installTaskApiMock(
 
     if (
       method === "DELETE" &&
-      (path.includes("/tasks/delete/") || path.includes("/api/tasks/delete/"))
+      pathIncludesAny(path, API_ROUTES.tasks.deletePrefix)
     ) {
       const id =
-        path.split("/tasks/delete/")[1] ??
-        path.split("/api/tasks/delete/")[1] ??
+        path.split(API_ROUTES.tasks.deletePrefix[0])[1] ??
+        path.split(API_ROUTES.tasks.deletePrefix[1])[1] ??
         "";
       const before = state.tasks.length;
       state.tasks = state.tasks.filter((t) => t._id !== id);
@@ -161,10 +162,7 @@ export async function installTaskApiMock(
       return json(route, deleted ? 200 : 404, { deleted });
     }
 
-    if (
-      method === "DELETE" &&
-      (is("/tasks/deleteAll") || is("/api/tasks/deleteAll"))
-    ) {
+    if (method === "DELETE" && pathEndsWithAny(path, API_ROUTES.tasks.deleteAll)) {
       state.tasks = [];
       return json(route, 200, { deletedAll: true });
     }

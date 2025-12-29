@@ -1,6 +1,9 @@
 // tests/pages/AddTaskDialog.ts
 import { Page, Locator, expect } from "@playwright/test";
 import { FormFields } from "../helpers/FormFields";
+import { Buttons } from "../helpers/Buttons";
+import { TEST_IDS } from "../data/testIds";
+import { API_ROUTES, urlIncludesAny } from "../data/apiRoutes";
 
 export type TaskFormFields = {
   name: string;
@@ -25,16 +28,20 @@ export class AddTaskDialog {
   readonly root: Locator;
   readonly form: FormFields<TaskFormFields>;
 
-  private readonly submitBtn: Locator;
-  private readonly cancelBtn: Locator;
+  private readonly buttons: Buttons<{
+    submit: string;
+    cancel: string;
+  }>;
 
   constructor(page: Page) {
     this.page = page;
     this.root = page.getByRole("dialog");
     this.form = new FormFields<TaskFormFields>(page, this.root);
 
-    this.submitBtn = this.root.locator('[data-test="submit-button"]');
-    this.cancelBtn = this.root.locator('[data-test="cancel-button"]');
+    this.buttons = new Buttons(this.root, {
+      submit: TEST_IDS.buttons.submit,
+      cancel: TEST_IDS.buttons.cancel,
+    });
   }
 
   async expectOpen(): Promise<void> {
@@ -42,7 +49,7 @@ export class AddTaskDialog {
   }
 
   async expectClosed(): Promise<void> {
-    await expect(this.root).toBeHidden({ timeout: 10000 });
+    await expect(this.root).toBeHidden({ timeout: 10_000 });
   }
 
   async fillBasicFields(data: BasicTaskData): Promise<void> {
@@ -57,7 +64,7 @@ export class AddTaskDialog {
     const dateField = await this.form.getFieldByPath("date");
     await dateField.blur();
 
-    await expect(dateField).not.toHaveValue("", { timeout: 5000 });
+    await expect(dateField).not.toHaveValue("", { timeout: 5_000 });
   }
 
   async setCoordinatesManually(lng: string, lat: string): Promise<void> {
@@ -76,41 +83,37 @@ export class AddTaskDialog {
   }
 
   async submit(): Promise<void> {
-    await expect(this.submitBtn).toBeVisible();
-    await expect(this.submitBtn).toBeEnabled();
-    await this.submitBtn.scrollIntoViewIfNeeded();
-    await this.submitBtn.click();
+    const btn = this.buttons.get("submit");
+    await expect(btn).toBeVisible();
+    await expect(btn).toBeEnabled();
+    await btn.scrollIntoViewIfNeeded();
+    await btn.click();
   }
 
   async submitAndWaitForCreate(
     timeoutMs: number = 45_000
   ): Promise<{ status: number; created?: unknown; all?: unknown; url?: string }> {
-    await expect(this.submitBtn).toBeVisible();
-    await expect(this.submitBtn).toBeEnabled();
-    await this.submitBtn.scrollIntoViewIfNeeded();
+    const submitBtn = this.buttons.get("submit");
+    await expect(submitBtn).toBeVisible();
+    await expect(submitBtn).toBeEnabled();
+    await submitBtn.scrollIntoViewIfNeeded();
 
     const isCreateTaskResponse = (r: any) => {
       const url = r.url();
       const m = r.request().method().toUpperCase();
-      return (
-        m === "POST" &&
-        (url.includes("/tasks/add") || url.includes("/api/tasks/add"))
-      );
+      return m === "POST" && urlIncludesAny(url, API_ROUTES.tasks.add);
     };
 
     const isTasksAllResponse = (r: any) => {
       const url = r.url();
       const m = r.request().method().toUpperCase();
-      return (
-        m === "GET" &&
-        (url.includes("/tasks/all") || url.includes("/api/tasks/all"))
-      );
+      return m === "GET" && urlIncludesAny(url, API_ROUTES.tasks.all);
     };
 
     const [createRes, allRes] = await Promise.all([
       this.page.waitForResponse(isCreateTaskResponse, { timeout: timeoutMs }),
       this.page.waitForResponse(isTasksAllResponse, { timeout: timeoutMs }),
-      this.submitBtn.click(),
+      submitBtn.click(),
     ]);
 
     const status = createRes.status();
@@ -142,14 +145,14 @@ export class AddTaskDialog {
 
   async ensureClosed(timeoutMs: number = 10_000): Promise<void> {
     try {
-      await this.root.waitFor({ state: "hidden", timeout: 1500 });
+      await this.root.waitFor({ state: "hidden", timeout: 1_500 });
       return;
     } catch {
       // still open
     }
 
     try {
-      await this.cancelBtn.click({ timeout: 5000 });
+      await this.buttons.click("cancel", 5_000);
     } catch {
       // ignore
     }
@@ -158,6 +161,6 @@ export class AddTaskDialog {
   }
 
   async cancel(): Promise<void> {
-    await this.cancelBtn.click();
+    await this.buttons.click("cancel");
   }
 }

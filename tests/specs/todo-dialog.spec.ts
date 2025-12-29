@@ -3,96 +3,16 @@ import { test, expect } from "../fixtures/test-fixtures";
 import { AddTaskDialog } from "../pages/AddTaskDialog";
 import { MapPage } from "../pages/MapPage";
 import { NavBar } from "../components/navBar";
-import { buildUniqueTask } from "../data/taskData";
-
-import type { Page, Request } from "@playwright/test";
-
-function formatDateMDY(date: Date): string {
-  const mm = String(date.getMonth() + 1).padStart(2, "0");
-  const dd = String(date.getDate()).padStart(2, "0");
-  const yyyy = String(date.getFullYear());
-  return `${mm}/${dd}/${yyyy}`;
-}
-
-function futureDateMDY(daysAhead = 1): string {
-  const d = new Date();
-  d.setDate(d.getDate() + daysAhead);
-  return formatDateMDY(d);
-}
-
-function attachApiLogs(page: Page) {
-  const flag = "__apiLogsAttached__";
-  if ((page as any)[flag]) return;
-  (page as any)[flag] = true;
-
-  const isRelevant = (url: string) =>
-    url.includes("/tasks") || url.includes("todolisthafifa");
-
-  page.on("request", (req: Request) => {
-    const url = req.url();
-    if (!isRelevant(url)) return;
-
-    const method = req.method();
-    console.log(`[REQ] ${method} ${url}`);
-
-    if (method === "POST") {
-      try {
-        const json = req.postDataJSON();
-        console.log("[REQ BODY]", JSON.stringify(json, null, 2));
-      } catch {
-        const raw = req.postData();
-        if (raw) console.log("[REQ BODY RAW]", raw);
-      }
-    }
-  });
-
-  page.on("response", async (res) => {
-    const url = res.url();
-    if (!isRelevant(url)) return;
-
-    console.log(`[RES] ${res.status()} ${res.request().method()} ${url}`);
-
-    try {
-      const ct = res.headers()["content-type"] || "";
-      if (ct.includes("application/json")) {
-        const body = await res.json();
-        console.log("[RES JSON]", JSON.stringify(body, null, 2));
-      } else {
-        const text = await res.text();
-        console.log("[RES TEXT]", text.slice(0, 500));
-      }
-    } catch (e) {
-      console.log("[RES READ ERROR]", String(e));
-    }
-  });
-
-  page.on("requestfailed", (req) => {
-    const url = req.url();
-    if (!isRelevant(url)) return;
-
-    console.log(
-      `[REQ FAIL] ${req.method()} ${url} -> ${req.failure()?.errorText ?? "unknown"}`
-    );
-  });
-
-  page.on("console", (msg) => {
-    const txt = msg.text();
-    if (txt.toLowerCase().includes("error")) {
-      console.log(`[BROWSER CONSOLE] ${msg.type()}: ${txt}`);
-    }
-  });
-
-  page.on("pageerror", (err) => {
-    console.log("[PAGE ERROR]", err.message);
-  });
-}
+import { HomePage } from "../pages/HomePage";
+import { buildUniqueTask, futureDateMDY } from "../data/taskData";
+import { attachApiLogs } from "../helpers/debug/apiLogs";
 
 test("user can fill the task form and cancel", async ({ page }) => {
   await page.goto("/");
   const navBar = new NavBar(page);
-  await navBar.navigateToTab("home");
 
-  await page.locator('[data-test="add-task-button"]').click();
+  const home = new HomePage(page);
+  await home.openAddTaskDialogFromHome(navBar);
 
   const dialog = new AddTaskDialog(page);
   await dialog.expectOpen();
@@ -113,9 +33,9 @@ test("user can fill the task form and click on the map with dialog open", async 
 }) => {
   await page.goto("/");
   const navBar = new NavBar(page);
-  await navBar.navigateToTab("home");
 
-  await page.locator('[data-test="add-task-button"]').click();
+  const home = new HomePage(page);
+  await home.openAddTaskDialogFromHome(navBar);
 
   const dialog = new AddTaskDialog(page);
   await dialog.expectOpen();
@@ -140,12 +60,12 @@ test("user can submit a task", async ({ page }, testInfo) => {
   testInfo.setTimeout(60_000);
 
   attachApiLogs(page);
+
   await page.goto("/");
 
   const navBar = new NavBar(page);
-  await navBar.navigateToTab("home");
-
-  await page.locator('[data-test="add-task-button"]').click();
+  const home = new HomePage(page);
+  await home.openAddTaskDialogFromHome(navBar);
 
   const dialog = new AddTaskDialog(page);
   await dialog.expectOpen();
@@ -157,7 +77,6 @@ test("user can submit a task", async ({ page }, testInfo) => {
   await mapPage.expectMapVisible();
   await mapPage.clickRandomAndReadCoordinates();
 
-  // Real backend returns 201 Created, mock returns 200 -> accept any 2xx.
   const { status, all } = await dialog.submitAndWaitForCreate();
   expect(status).toBeGreaterThanOrEqual(200);
   expect(status).toBeLessThan(300);
@@ -173,9 +92,9 @@ test("user can fill the task form and set coordinates from the map", async ({
 }) => {
   await page.goto("/");
   const navBar = new NavBar(page);
-  await navBar.navigateToTab("home");
 
-  await page.locator('[data-test="add-task-button"]').click();
+  const home = new HomePage(page);
+  await home.openAddTaskDialogFromHome(navBar);
 
   const dialog = new AddTaskDialog(page);
   await dialog.expectOpen();

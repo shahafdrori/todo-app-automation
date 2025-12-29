@@ -33,6 +33,7 @@ jobs:
       BASE_URL: https://todolisthafifa-frontend.vercel.app
       CI: true
       MOCK_API: "true"
+      API_LOGS: "false"
       HOME: /root
 
     container: mcr.microsoft.com/playwright:v1.56.1-jammy
@@ -52,6 +53,7 @@ jobs:
         run: |
           echo "CI=$CI"
           echo "MOCK_API=$MOCK_API"
+          echo "API_LOGS=$API_LOGS"
           echo "BASE_URL=$BASE_URL"
 
       - name: Prepare artifact folders
@@ -90,6 +92,7 @@ jobs:
 
     env:
       HOME: /root
+      API_LOGS: "false"
 
     container: mcr.microsoft.com/playwright:v1.56.1-jammy
 

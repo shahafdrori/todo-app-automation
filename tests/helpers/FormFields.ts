@@ -1,4 +1,4 @@
-//tests/helpers/FormFields.ts
+// tests/helpers/FormFields.ts
 import { Locator, Page, expect } from "@playwright/test";
 
 export class FormFields<T extends Record<string, string>> {
@@ -10,13 +10,11 @@ export class FormFields<T extends Record<string, string>> {
     this.root = root ?? page;
   }
 
-  // ---------- basic locator helpers ----------
-
   private getBaseLocator(fieldName: keyof T): Locator {
     const name = String(fieldName);
 
     return this.root.locator(
-      `[data-test="${name}"], [name="${name}"], [id="${name}"], input[value="${name}"]`
+      `[data-test="${name}"], [name="${name}"], [id="${name}"], [aria-label="${name}"]`
     );
   }
 
@@ -35,8 +33,6 @@ export class FormFields<T extends Record<string, string>> {
     return base;
   }
 
-  // ---------- checkbox helpers ----------
-
   async checkField(fieldName: keyof T): Promise<void> {
     const checkBoxField = await this.getFieldByPath(fieldName);
     await checkBoxField.check();
@@ -46,8 +42,6 @@ export class FormFields<T extends Record<string, string>> {
     const checkBoxField = await this.getFieldByPath(fieldName);
     await checkBoxField.uncheck();
   }
-
-  // ---------- text-input helpers ----------
 
   async fillTextField(fieldName: keyof T, value: string): Promise<void> {
     const field = await this.getFieldByPath(fieldName);
@@ -75,20 +69,6 @@ export class FormFields<T extends Record<string, string>> {
     await this.page.keyboard.press("Enter");
   }
 
-  // ---------- generic dropdown helper ----------
-
-  /**
-   * For selects / dropdowns.
-   *
-   * Works in two modes:
-   * 1) Native <select>: uses selectOption({ label: value })
-   * 2) MUI TextField with `select` + MenuItem:
-   *    - our locator finds the hidden native input
-   *    - we climb to the sibling/div with role="combobox" and click that
-   *
-   * Usage:
-   *   await form.selectOption("subject", "OCP");
-   */
   async selectOption(fieldName: keyof T, value: string): Promise<void> {
     const field = await this.getFieldByPath(fieldName);
 
@@ -96,15 +76,11 @@ export class FormFields<T extends Record<string, string>> {
       (el as HTMLElement).tagName.toLowerCase()
     );
 
-    // Native <select>
     if (tagName === "select") {
       await field.selectOption({ label: value });
       return;
     }
 
-    // Try to detect MUI <TextField select> case:
-    // we found the hidden native input (.MuiSelect-nativeInput),
-    // the clickable element is a sibling with role="combobox" or "button".
     let clickTarget: Locator = field;
 
     const hasMuiSelectClass = await field.evaluate((el) => {
@@ -128,14 +104,10 @@ export class FormFields<T extends Record<string, string>> {
     await option.click();
   }
 
-  // ---------- button helper (generic) ----------
-
   async clickButtonOnForm(fieldName: keyof T): Promise<void> {
     const field = await this.getFieldByPath(fieldName);
     await field.click();
   }
-
-  // ---------- numeric "priority" helper ----------
 
   async setPriority(fieldName: keyof T, value: string | number): Promise<void> {
     const strValue = String(value).trim();
@@ -154,11 +126,10 @@ export class FormFields<T extends Record<string, string>> {
 
     await field.click();
     await field.fill("");
-
     await field.type(strValue);
 
     if (inRange) {
-      await expect(field).toHaveValue(numValue.toString(), { timeout: 30000 });
+      await expect(field).toHaveValue(numValue.toString(), { timeout: 30_000 });
     }
   }
 }

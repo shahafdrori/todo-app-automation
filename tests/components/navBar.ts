@@ -1,35 +1,36 @@
 // tests/components/navBar.ts
 import { Page, expect } from "@playwright/test";
 import { Buttons } from "../helpers/Buttons";
+import { TEST_IDS } from "../data/testIds";
 
 export const NAV_TABS = {
   home: {
-    selector: '[data-test="nav-home"]',
+    testId: TEST_IDS.nav.home,
     path: "/",
   },
   admin: {
-    selector: '[data-test="nav-admin"]',
+    testId: TEST_IDS.nav.admin,
     path: "/admin-page",
   },
   map: {
-    selector: '[data-test="nav-map"]',
+    testId: TEST_IDS.nav.map,
     path: "/tasks-map",
   },
 } as const;
 
 export type NavTab = keyof typeof NAV_TABS;
 
-const NAV_BUTTON_SELECTORS: Record<NavTab, string> = {
-  home: NAV_TABS.home.selector,
-  admin: NAV_TABS.admin.selector,
-  map: NAV_TABS.map.selector,
-};
-
 export class NavBar {
-  private buttons: Buttons<typeof NAV_BUTTON_SELECTORS>;
+  private readonly buttons: Buttons<Record<NavTab, string>>;
 
-  constructor(private page: Page) {
-    this.buttons = new Buttons(page, NAV_BUTTON_SELECTORS);
+  constructor(private readonly page: Page) {
+    const ids = {
+      home: NAV_TABS.home.testId,
+      admin: NAV_TABS.admin.testId,
+      map: NAV_TABS.map.testId,
+    } as Record<NavTab, string>;
+
+    this.buttons = new Buttons(this.page, ids);
   }
 
   async navigateToTab(tab: NavTab): Promise<void> {
@@ -40,12 +41,11 @@ export class NavBar {
       return;
     }
 
-    await this.buttons.clickButton(tab);
+    await this.buttons.click(tab);
     await expect(this.page).toHaveURL(new RegExp(`${targetPath}$`));
   }
 
-  async expectButtonTabVisible(tab: NavTab): Promise<void> {
-    const locator = this.buttons.getButton(tab);
-    await expect(locator).toBeVisible();
+  async expectTabVisible(tab: NavTab): Promise<void> {
+    await expect(this.buttons.get(tab)).toBeVisible();
   }
 }
