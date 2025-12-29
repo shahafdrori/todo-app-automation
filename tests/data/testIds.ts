@@ -1,15 +1,4 @@
 // tests/data/testIds.ts
-/**
- * Central registry for stable UI test IDs (data-test).
- *
- * Works with Playwright config:
- *   use: { testIdAttribute: "data-test" }
- *
- * Benefits:
- * - Consistent selectors across specs/pages
- * - Single source of truth for UI test IDs
- * - Easier refactors and maintenance
- */
 export const TEST_IDS = {
   nav: {
     home: "nav-home",
@@ -19,8 +8,12 @@ export const TEST_IDS = {
   buttons: {
     addTask: "add-task-button",
     clearAll: "clear-all-button",
+    showCompleted: "show-completed-button",
     submit: "submit-button",
     cancel: "cancel-button",
+  },
+  inputs: {
+    search: "search-input",
   },
   map: {
     taskMap: "task-map",
