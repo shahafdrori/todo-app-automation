@@ -47,12 +47,8 @@ export class HomePage {
     await add.click();
   }
 
-  async clearAllTasksFromHome(
-    navBar: NavBar,
-    timeoutMs = 30_000
-  ): Promise<void> {
+  async clearAllTasksFromHome(navBar: NavBar, timeoutMs = 30_000): Promise<void> {
     await this.goto(navBar);
-
     const btn = this.buttons.get("clearAll");
     if (!(await btn.isVisible())) return;
 
@@ -65,13 +61,17 @@ export class HomePage {
       return m === "DELETE" && urlIncludesAny(url, API_ROUTES.tasks.deleteAll);
     };
 
-    await Promise.all([
-      this.page.waitForResponse(isDeleteAll, { timeout: timeoutMs }).catch(() => {}),
+    const [res] = await Promise.all([
+      this.page.waitForResponse(isDeleteAll, { timeout: timeoutMs }),
       btn.click(),
     ]);
 
+    expect(res.status()).toBeGreaterThanOrEqual(200);
+    expect(res.status()).toBeLessThan(300);
+
     await this.page.waitForTimeout(150);
   }
+
 
   async search(text: string): Promise<void> {
     const input = this.page.getByTestId(TEST_IDS.inputs.search);
