@@ -54,25 +54,23 @@ test("clear all removes tasks (strict in mock + real)", async (
 
   await admin.goto(navBar);
   expect(await admin.getTaskRowCount()).toBeGreaterThan(0);
-
   await home.clearAllTasksFromHome(navBar, 45_000);
 
+  // Home should be empty
+  await home.goto(navBar);
   const list = page.getByRole("list");
 
   await expect
-    .poll(async () => {
-      await home.goto(navBar);
-      return await list.getByRole("listitem").count();
-    }, { timeout: 15_000 })
+    .poll(async () => await list.getByRole("listitem").count(), { timeout: 15_000 })
     .toBe(0);
 
+  // Admin should be empty
+  await admin.goto(navBar);
   await expect
-    .poll(async () => {
-      await admin.goto(navBar);
-      return await admin.getTaskRowCount();
-    }, { timeout: 15_000 })
+    .poll(async () => await admin.getTaskRowCount(), { timeout: 15_000 })
     .toBe(0);
 
+  // After reload: still empty
   await page.reload();
   await home.goto(navBar);
 
