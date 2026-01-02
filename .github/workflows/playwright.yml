@@ -34,7 +34,7 @@ jobs:
       CI: true
       MOCK_API: "true"
       API_LOGS: "false"
-      HOME: /home/pwuser
+      HOME: /root
 
     container: mcr.microsoft.com/playwright:v1.56.1-jammy
 
@@ -91,7 +91,7 @@ jobs:
     if: always()
 
     env:
-      HOME: /home/pwuser
+      HOME: /root
       API_LOGS: "false"
 
     container: mcr.microsoft.com/playwright:v1.56.1-jammy

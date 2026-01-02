@@ -1,3 +1,4 @@
+// tests/helpers/Buttons.ts
 import type { Locator, Page } from "@playwright/test";
 
 type Root = Page | Locator;
@@ -5,8 +6,6 @@ type Root = Page | Locator;
 function isPage(root: Root): root is Page {
   return typeof (root as Page).url === "function";
 }
-
-const DEFAULT_TIMEOUT = process.env.CI ? 30_000 : 10_000;
 
 export class Buttons<T extends Record<string, string>> {
   constructor(private readonly root: Root, private readonly ids: T) {}
@@ -21,10 +20,10 @@ export class Buttons<T extends Record<string, string>> {
     return this.root.getByTestId(id);
   }
 
-  async click(key: keyof T, timeout = DEFAULT_TIMEOUT): Promise<void> {
+  async click(key: keyof T, timeout = 10_000): Promise<void> {
     const btn = this.get(key);
     await btn.waitFor({ state: "visible", timeout });
     await btn.scrollIntoViewIfNeeded();
-    await btn.click({ timeout });
+    await btn.click();
   }
 }
