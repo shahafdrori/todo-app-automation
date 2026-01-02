@@ -73,10 +73,13 @@ test("clear all removes tasks (strict in mock + real)", async (
     }, { timeout: 15_000 })
     .toBe(0);
 
-  await page.reload();
-  await home.goto(navBar);
+  await home.goto(navBar);       
+  await page.reload();          
+  await home.expectLoaded();     
 
+  const listAfterReload = page.getByRole("list");
   await expect
-    .poll(async () => await list.getByRole("listitem").count(), { timeout: 15_000 })
+    .poll(async () => await listAfterReload.getByRole("listitem").count(), { timeout: 15_000 })
     .toBe(0);
+
 });
