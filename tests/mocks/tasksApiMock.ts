@@ -12,6 +12,7 @@ export type Task = {
   subject: string;
   priority: number;
   date: string;
+  completed?: boolean;
   coordinates: { latitude: number; longitude: number };
 };
 
@@ -58,6 +59,7 @@ function normalizeTask(input: any): Omit<Task, "_id"> {
     subject: String(input?.subject ?? ""),
     priority: Number(input?.priority ?? 0),
     date: String(input?.date ?? ""),
+    completed: Boolean(input?.completed ?? false),
     coordinates: {
       latitude: Number(
         input?.coordinates?.latitude ?? input?.coordinates?.lat ?? 0
@@ -97,7 +99,6 @@ export async function installTaskApiMock(
 
   if (!enabled) return { reset };
 
-  // Intercept only URLs that include "tasks" somewhere to reduce overhead/flakiness.
   await context.route("**/*tasks**", async (route) => {
     const request = route.request();
     const urlStr = request.url();
