@@ -152,3 +152,12 @@ jobs:
           path: automation/test-results/
           if-no-files-found: ignore
           retention-days: 14
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 2 * * *"
+  push:
+    branches:
+      - <chore/ci-real-e2e-stack>
+
