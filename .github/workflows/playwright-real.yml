@@ -1,3 +1,4 @@
+# .github/workflows/playwright-real.yml
 name: Playwright E2E (Real Stack)
 
 on:
@@ -56,13 +57,13 @@ jobs:
       - name: Checkout backend
         uses: actions/checkout@v4
         with:
-          repository: <shahafdrori>/todolisthafifa-backend
+          repository: shahafdrori/todolisthafifa-backend
           path: backend
 
       - name: Checkout frontend
         uses: actions/checkout@v4
         with:
-          repository: <shahafdrori>/todolisthafifa-frontend
+          repository: shahafdrori/todolisthafifa-frontend
           path: frontend
 
       - uses: actions/setup-node@v4

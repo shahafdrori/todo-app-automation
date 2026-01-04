@@ -28,9 +28,9 @@ Built as a **portfolio-grade** E2E suite with an emphasis on **cross-browser rel
 npm ci
 npm test
 npm run report
-```
+````
 
-* npm test runs in **mock mode** by default (MOCK_API=true), so it works without a backend/DB.
+* `npm test` runs in **mock mode** by default (`MOCK_API=true`), so it works without a backend/DB.
 
 ---
 
@@ -61,7 +61,8 @@ Map interactions:
 
 ```
 .github/workflows/
-  playwright.yml              # CI: 3 browsers × 3 shards, blob upload + merged HTML report
+  playwright.yml              # CI (Mock): 3 browsers × 3 shards, blob upload + merged HTML report
+  playwright-real.yml         # CI (Real Stack): Mongo + backend + frontend preview + chromium run
 
 tests/
   components/
@@ -108,7 +109,8 @@ package.json
 ## Requirements
 
 * Node.js **18+** (CI uses Node 20)
-* Install dependencies:
+
+Install dependencies:
 
 ```bash
 npm ci
@@ -187,7 +189,7 @@ npm run test:mock:debug
 npm run test:mock:flaky
 ```
 
-### Real backend mode (local only)
+### Real backend mode (local)
 
 Runs against a real backend and database.
 
@@ -220,9 +222,6 @@ npm run test:real:debug
 Enable API request/response logging for any test run by prefixing the command with `API_LOGS=true`.
 
 ```bash
-# General usage:
-API_LOGS=true <your test command>
-
 # Example: Run with mocks (headless)
 API_LOGS=true npm test
 
@@ -276,30 +275,45 @@ This keeps behavior consistent across:
 
 ---
 
-## CI pipeline (GitHub Actions)
+## CI workflows (GitHub Actions)
+
+### 1) Mock CI (PR gate): `playwright.yml`
 
 Workflow file: `.github/workflows/playwright.yml`
 
-CI behavior:
+Behavior:
 
+* Runs on pull requests and pushes to main/master
 * Browsers: Chromium, Firefox, WebKit
 * Sharding: 3 shards per browser (total **9** parallel E2E jobs)
-* Execution environment: Playwright Docker image
-  `mcr.microsoft.com/playwright:v1.56.1-jammy`
-* Default mode: mock mode (`MOCK_API=true`)
 * Target UI: deployed frontend (`BASE_URL`)
-  `https://todolisthafifa-frontend.vercel.app`
-* CI runs in mock mode by default to keep PR checks deterministic and fast. Real mode is intended for local runs (or a dedicated staging environment).
+* Mode: mock mode (`MOCK_API=true`)
+* Produces a merged HTML report from blob reports
 
-CI reports:
+Artifacts:
 
-* Each shard uploads:
+* `playwright-report` (merged HTML)
+* `test-results-*` per shard (screenshots/videos/traces on failure)
 
-  * `blob-report` (used for merging)
-  * `test-results` (screenshots, videos, traces on failure)
-* A dedicated merge job produces a single downloadable HTML report artifact:
+### 2) Real Stack CI (manual + nightly): `playwright-real.yml`
 
-  * `playwright-report`
+Workflow file: `.github/workflows/playwright-real.yml`
+
+Behavior:
+
+* Runs on `workflow_dispatch` and nightly schedule
+* Starts a full stack inside CI:
+
+  * MongoDB service
+  * backend (`npm start`)
+  * frontend (`npm run build` + `npm run preview`)
+* Runs Playwright **Chromium** against `http://localhost:5173`
+* Mode: real backend + DB (`MOCK_API=false`)
+
+Artifacts:
+
+* `playwright-report-real` (HTML report)
+* `test-results-real` (screenshots/videos/traces)
 
 ---
 
@@ -310,3 +324,4 @@ CI reports:
   * Completion state isn’t persisted to the backend
   * The home list isn’t filtered by `showCompleted` yet
 * Because of that, `home-filters.spec.ts` includes a **mock-only** test marked as an expected failure (`test.fail(...)`) and it’s skipped in real mode.
+
