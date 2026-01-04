@@ -22,6 +22,18 @@ Built as a **portfolio-grade** E2E suite with an emphasis on **cross-browser rel
 
 ---
 
+## Quick start
+
+```bash
+npm ci
+npm test
+npm run report
+```
+
+* npm test runs in **mock mode** by default (MOCK_API=true), so it works without a backend/DB.
+
+---
+
 ## What’s covered by the tests
 
 UI flows:
@@ -184,6 +196,9 @@ Requirements:
 * Frontend running at `BASE_URL` (default `http://localhost:5173`)
 * Backend running (typically `http://localhost:3000`)
 * Frontend configured to call the backend (usually via the frontend repo `.env`)
+* If you use local MongoDB via Docker, make sure the backend `DATABASE_URL` points to the local container and the DB is running before executing the tests
+
+> Note: The database is **not** part of this repo — run your **backend project** (and its DB setup: Atlas or Docker) before running `npm run test:real`.
 
 Run:
 
@@ -274,6 +289,7 @@ CI behavior:
 * Default mode: mock mode (`MOCK_API=true`)
 * Target UI: deployed frontend (`BASE_URL`)
   `https://todolisthafifa-frontend.vercel.app`
+* CI runs in mock mode by default to keep PR checks deterministic and fast. Real mode is intended for local runs (or a dedicated staging environment).
 
 CI reports:
 
