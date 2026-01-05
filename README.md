@@ -197,16 +197,43 @@ Requirements:
 
 * Frontend running at `BASE_URL` (default `http://localhost:5173`)
 * Backend running (typically `http://localhost:3000`)
-* Frontend configured to call the backend (usually via the frontend repo `.env`)
-* If you use local MongoDB via Docker, make sure the backend `DATABASE_URL` points to the local container and the DB is running before executing the tests
+* Frontend configured to call the backend (often via the frontend repo `.env`, e.g. `VITE_API_KEY=http://localhost:3000`)
+* If you use local MongoDB via Docker, make sure the backend `DATABASE_URL` points to the local DB and Mongo is up before executing the tests
 
-> Note: The database is **not** part of this repo — run your **backend project** (and its DB setup: Atlas or Docker) before running `npm run test:real`.
+Example local workflow (Mongo via Docker):
 
-Run:
+1. Start MongoDB (in the backend repo)
 
 ```bash
+docker compose up -d
+# or: docker compose up -d mongodb
+```
+
+2. Start the backend (in the backend repo)
+
+```bash
+npm ci
+npm start
+```
+
+3. Start the frontend (in the frontend repo)
+
+```bash
+npm ci
+npm run dev
+# make sure it runs on http://localhost:5173
+```
+
+4. Run tests in real mode (in THIS automation repo)
+
+```bash
+# ensure your automation .env has:
+# BASE_URL=http://localhost:5173
+# MOCK_API=false
 npm run test:real
 ```
+
+> Note: The backend/frontend/database are not part of this repo. This repo only contains the Playwright E2E suite.
 
 Other useful real-mode commands:
 
@@ -307,8 +334,13 @@ Behavior:
   * MongoDB service
   * backend (`npm start`)
   * frontend (`npm run build` + `npm run preview`)
-* Runs Playwright **Chromium** against `http://localhost:5173`
+* Runs Playwright **Chromium only** against `http://localhost:5173`
 * Mode: real backend + DB (`MOCK_API=false`)
+
+Why Chromium only:
+
+* This workflow’s goal is **integration confidence** (Mongo + backend + built frontend).
+* Keeping it Chromium-only reduces CI flakes and runtime while PR-gate mock CI still enforces cross-browser stability.
 
 Artifacts:
 
