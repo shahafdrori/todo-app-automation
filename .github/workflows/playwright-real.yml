@@ -98,15 +98,27 @@ jobs:
           nohup npm start > /tmp/backend.log 2>&1 &
           echo $! > /tmp/backend.pid
           sleep 1
+          echo "Backend PID: $(cat /tmp/backend.pid)"
           ps -p "$(cat /tmp/backend.pid)" -o pid,cmd || true
+          tail -n 60 /tmp/backend.log || true
 
       - name: Wait for backend
         run: |
           for i in {1..60}; do
-            if curl -sSf http://127.0.0.1:3000/tasks/all >/dev/null; then
+            if curl -4 -sSf http://127.0.0.1:3000/tasks/all >/dev/null; then
               echo "Backend is up"
               exit 0
             fi
+
+            if [ -f /tmp/backend.pid ] && ! kill -0 "$(cat /tmp/backend.pid)" 2>/dev/null; then
+              echo "Backend process is not running anymore!"
+              echo "----- listening ports -----"
+              ss -lntp || true
+              echo "----- backend log -----"
+              cat /tmp/backend.log || true
+              exit 1
+            fi
+
             sleep 2
           done
 
@@ -121,20 +133,36 @@ jobs:
         working-directory: frontend
         run: |
           npm run build
-          nohup npm run preview -- --host 0.0.0.0 --port 5173 > /tmp/frontend.log 2>&1 &
+          nohup npm run preview -- --host 0.0.0.0 --port 5173 --strictPort > /tmp/frontend.log 2>&1 &
           echo $! > /tmp/frontend.pid
+          sleep 1
+          echo "Frontend PID: $(cat /tmp/frontend.pid)"
+          ps -p "$(cat /tmp/frontend.pid)" -o pid,cmd || true
+          tail -n 120 /tmp/frontend.log || true
 
       - name: Wait for frontend
         run: |
           for i in {1..60}; do
-            if curl -sSf http://127.0.0.1:5173/ >/dev/null; then
+            if curl -4 -sSf http://127.0.0.1:5173/ >/dev/null; then
               echo "Frontend is up"
               exit 0
             fi
+
+            if [ -f /tmp/frontend.pid ] && ! kill -0 "$(cat /tmp/frontend.pid)" 2>/dev/null; then
+              echo "Frontend process is not running anymore!"
+              echo "----- listening ports -----"
+              ss -lntp || true
+              echo "----- frontend log -----"
+              cat /tmp/frontend.log || true
+              exit 1
+            fi
+
             sleep 2
           done
 
           echo "Frontend failed to start"
+          echo "----- listening ports -----"
+          ss -lntp || true
           echo "----- frontend log -----"
           cat /tmp/frontend.log || true
           exit 1
