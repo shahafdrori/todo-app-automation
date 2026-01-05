@@ -39,19 +39,21 @@ jobs:
       CI: true
       MOCK_API: "false"
       API_LOGS: "false"
-      HOME: /root
 
-      # Playwright will hit local frontend
-      BASE_URL: http://localhost:5173
+      HOME: /home/pwuser
+      DOCKER_CONFIG: /tmp/.docker
 
-      # Backend env
+      BASE_URL: http://127.0.0.1:5173
+
       PORT: 3000
       DATABASE_URL: mongodb://mongodb:27017/todolisthafifa_ci_${{ github.run_id }}
 
-      # Frontend env (compiled at build time)
-      VITE_API_KEY: http://localhost:3000
+      VITE_API_KEY: http://127.0.0.1:3000
 
     steps:
+      - name: Prepare runtime dirs
+        run: mkdir -p /tmp/.docker
+
       - name: Checkout automation
         uses: actions/checkout@v4
         with:
@@ -93,19 +95,24 @@ jobs:
       - name: Start backend
         working-directory: backend
         run: |
-          npm start > /tmp/backend.log 2>&1 &
+          nohup npm start > /tmp/backend.log 2>&1 &
           echo $! > /tmp/backend.pid
+          sleep 1
+          ps -p "$(cat /tmp/backend.pid)" -o pid,cmd || true
 
       - name: Wait for backend
         run: |
           for i in {1..60}; do
-            if curl -sSf http://localhost:3000/tasks/all >/dev/null; then
+            if curl -sSf http://127.0.0.1:3000/tasks/all >/dev/null; then
               echo "Backend is up"
               exit 0
             fi
             sleep 2
           done
+
           echo "Backend failed to start"
+          echo "----- listening ports -----"
+          ss -lntp || true
           echo "----- backend log -----"
           cat /tmp/backend.log || true
           exit 1
@@ -114,18 +121,19 @@ jobs:
         working-directory: frontend
         run: |
           npm run build
-          npm run preview -- --host 0.0.0.0 --port 5173 > /tmp/frontend.log 2>&1 &
+          nohup npm run preview -- --host 0.0.0.0 --port 5173 > /tmp/frontend.log 2>&1 &
           echo $! > /tmp/frontend.pid
 
       - name: Wait for frontend
         run: |
           for i in {1..60}; do
-            if curl -sSf http://localhost:5173/ >/dev/null; then
+            if curl -sSf http://127.0.0.1:5173/ >/dev/null; then
               echo "Frontend is up"
               exit 0
             fi
             sleep 2
           done
+
           echo "Frontend failed to start"
           echo "----- frontend log -----"
           cat /tmp/frontend.log || true
@@ -155,6 +163,3 @@ jobs:
           path: automation/test-results/
           if-no-files-found: ignore
           retention-days: 14
-
-
-
