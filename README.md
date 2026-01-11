@@ -28,7 +28,7 @@ Built as a **portfolio-grade** E2E suite with an emphasis on **cross-browser rel
 npm ci
 npm test
 npm run report
-````
+```
 
 * `npm test` runs in **mock mode** by default (`MOCK_API=true`), so it works without a backend/DB.
 
@@ -44,6 +44,8 @@ UI flows:
 * Task dialog behavior: fill + cancel, submit, coordinate inputs are populated
 * Clear All removes tasks from Home + Admin and persists after reload
 * Table assertions via a generic `TableHelper` (headers, row search, per-cell validation)
+* Home task list: validate item actions (toggle complete, edit, delete, open map) + validate details (subject/priority/coords)
+* Delete from home list removes the task from Home and Admin (mock + real)
 
 Map interactions:
 
@@ -81,6 +83,8 @@ tests/
       apiLogs.ts              # Optional request/response logging (API_LOGS=true)
     flows/
       taskFlows.ts            # Reusable UI flows (e.g., createTaskFromHome)
+    list/
+      homeTaskListText.ts     # Parse subject/priority/coords from home list item text
     map/
       mapHelpers.ts           # OpenLayers helpers (click/pan/zoom, debug-hook validation)
   mocks/
@@ -89,11 +93,13 @@ tests/
     AddTaskDialog.ts          # Dialog POM
     AdminTablePage.ts         # Admin page POM + table assertions
     HomePage.ts               # Home page POM (search/clearAll/showCompleted)
+    HomeTaskList.ts           # Home list POM (item actions + read values)
     MapPage.ts                # Map tab/dialog POM helpers
   specs/
     admin-table.spec.ts
     clear-all.spec.ts
     home-filters.spec.ts
+    home-task-list.spec.ts
     home.spec.ts
     map-tab.spec.ts
     todo-dialog.spec.ts
