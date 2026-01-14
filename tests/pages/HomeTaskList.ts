@@ -1,10 +1,16 @@
-//tests/pages/HomeTaskList.ts
+// tests/pages/HomeTaskList.ts
 import { expect, Locator, Page } from "@playwright/test";
+import { TEST_IDS } from "../data/testIds";
+import { TaskCard } from "../components/TaskCard";
 import {
   extractPriorityFromText,
   extractSubjectFromText,
   extractTaskCoordsFromText,
 } from "../helpers/list/homeTaskListText";
+
+function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
 
 export class HomeTaskList {
   readonly page: Page;
@@ -12,124 +18,79 @@ export class HomeTaskList {
 
   constructor(page: Page) {
     this.page = page;
-    this.list = page.getByRole("list").first();
+    this.list = page.getByTestId(TEST_IDS.taskCard.list);
   }
 
-  private items(): Locator {
-    return this.list.getByRole("listitem");
+  private cards(): Locator {
+    return this.list.getByTestId(TEST_IDS.taskCard.root);
   }
 
-  itemByName(name: string): Locator {
-    return this.items().filter({ hasText: name }).first();
+  getTaskCard(name: string): TaskCard {
+    const exactName = new RegExp(`^${escapeRegExp(name)}$`);
+    const nameEl = this.page
+      .getByTestId(TEST_IDS.taskCard.name)
+      .filter({ hasText: exactName })
+      .first();
+
+    const root = this.cards().filter({ has: nameEl }).first();
+    return new TaskCard(this.page, root);
   }
 
-  private checkboxInItem(item: Locator): Locator {
-    return item.locator('input[type="checkbox"]').first();
-  }
-
-  private deleteButtonInItem(item: Locator): Locator {
-    return item.getByRole("button", { name: "delete" }).first();
-  }
-
-  private editButtonInItem(item: Locator): Locator {
-    return item.getByRole("button", { name: "edit" }).first();
-  }
-
-  private locationButtonInItem(item: Locator): Locator {
-    return item.getByRole("button", { name: "location" }).first();
+  async expectTaskCount(n: number, timeoutMs = 10_000): Promise<void> {
+    await expect.poll(async () => await this.cards().count(), { timeout: timeoutMs }).toBe(n);
   }
 
   async waitForTaskVisible(name: string, timeoutMs = 15_000): Promise<void> {
-    const item = this.itemByName(name);
+    const card = this.getTaskCard(name);
     await expect
-      .poll(async () => await item.isVisible().catch(() => false), {
-        timeout: timeoutMs,
-      })
+      .poll(async () => await card.root.isVisible().catch(() => false), { timeout: timeoutMs })
       .toBe(true);
-    await expect(item).toBeVisible();
+    await card.expectVisible();
   }
 
   async waitForTaskGone(name: string, timeoutMs = 15_000): Promise<void> {
-    const item = this.itemByName(name);
+    const card = this.getTaskCard(name);
     await expect
-      .poll(async () => await item.isVisible().catch(() => false), {
-        timeout: timeoutMs,
-      })
+      .poll(async () => await card.root.isVisible().catch(() => false), { timeout: timeoutMs })
       .toBe(false);
   }
 
+  async expectTaskCompleted(name: string, completed: boolean): Promise<void> {
+    await this.getTaskCard(name).expectNameColor(completed ? "green" : "red");
+  }
+
+  async toggleTaskCompleted(name: string): Promise<void> {
+    await this.getTaskCard(name).toggleCompleted();
+  }
+
   async expectTaskActionsVisible(name: string): Promise<void> {
-    const item = this.itemByName(name);
-    await expect(item).toBeVisible();
-
-    await expect(this.checkboxInItem(item)).toBeVisible();
-    await expect(this.deleteButtonInItem(item)).toBeVisible();
-    await expect(this.editButtonInItem(item)).toBeVisible();
-    await expect(this.locationButtonInItem(item)).toBeVisible();
-  }
-
-  async toggleComplete(name: string): Promise<void> {
-    const item = this.itemByName(name);
-    await expect(item).toBeVisible();
-
-    const cb = this.checkboxInItem(item);
-    await cb.click({ force: true });
-  }
-
-  async expectTaskNameColor(name: string, expected: "red" | "green") {
-    const item = this.itemByName(name);
-    await expect(item).toBeVisible();
-
-    const nameEl = item.getByText(name, { exact: true }).first();
-
-    const color = await nameEl.evaluate((el) => getComputedStyle(el).color);
-
-    const redRe = /rgb(a)?\(\s*255\s*,\s*0\s*,\s*0/i;
-    const greenRe = /rgb(a)?\(\s*0\s*,\s*128\s*,\s*0/i;
-
-    if (expected === "red") {
-      expect(color).toMatch(redRe);
-    } else {
-      expect(color).toMatch(greenRe);
-    }
+    await this.getTaskCard(name).expectActionsVisible();
   }
 
   async clickDelete(name: string): Promise<void> {
-    const item = this.itemByName(name);
-    await expect(item).toBeVisible();
-    await this.deleteButtonInItem(item).click();
+    await this.getTaskCard(name).clickDelete();
   }
 
   async clickEdit(name: string): Promise<void> {
-    const item = this.itemByName(name);
-    await expect(item).toBeVisible();
-    await this.editButtonInItem(item).click();
+    await this.getTaskCard(name).clickEdit();
   }
 
   async clickLocation(name: string): Promise<void> {
-    const item = this.itemByName(name);
-    await expect(item).toBeVisible();
-    await this.locationButtonInItem(item).click();
-  }
-
-  async readItemText(name: string): Promise<string> {
-    const item = this.itemByName(name);
-    await expect(item).toBeVisible();
-    return (await item.innerText()).replace(/\s+/g, " ").trim();
+    await this.getTaskCard(name).clickLocation();
   }
 
   async readCoords(name: string): Promise<{ longitude: number; latitude: number } | null> {
-    const text = await this.readItemText(name);
+    const text = await this.getTaskCard(name).readMetaText();
     return extractTaskCoordsFromText(text);
   }
 
   async readSubject(name: string): Promise<string | null> {
-    const text = await this.readItemText(name);
+    const text = await this.getTaskCard(name).readMetaText();
     return extractSubjectFromText(text);
   }
 
   async readPriority(name: string): Promise<number | null> {
-    const text = await this.readItemText(name);
+    const text = await this.getTaskCard(name).readMetaText();
     return extractPriorityFromText(text);
   }
 }

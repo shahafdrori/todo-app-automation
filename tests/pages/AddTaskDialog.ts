@@ -138,6 +138,54 @@ export class AddTaskDialog {
     return { status, created, all, url };
   }
 
+  async submitAndWaitForUpdate(
+    timeoutMs: number = 45_000
+  ): Promise<{ status: number; updated?: unknown; all?: unknown; url?: string }> {
+    const submitBtn = this.buttons.get("submit");
+    await expect(submitBtn).toBeVisible();
+    await expect(submitBtn).toBeEnabled();
+    await submitBtn.scrollIntoViewIfNeeded();
+
+    const isUpdateTaskResponse = (r: any) => {
+      const url = r.url();
+      const m = r.request().method().toUpperCase();
+      return m === "PUT" && urlIncludesAny(url, API_ROUTES.tasks.updatePrefix);
+    };
+
+    const isTasksAllResponse = (r: any) => {
+      const url = r.url();
+      const m = r.request().method().toUpperCase();
+      return m === "GET" && urlIncludesAny(url, API_ROUTES.tasks.all);
+    };
+
+    const [updateRes, allRes] = await Promise.all([
+      this.page.waitForResponse(isUpdateTaskResponse, { timeout: timeoutMs }),
+      this.page.waitForResponse(isTasksAllResponse, { timeout: timeoutMs }),
+      submitBtn.click(),
+    ]);
+
+    const status = updateRes.status();
+    const url = updateRes.url();
+
+    let updated: unknown;
+    try {
+      const ct = updateRes.headers()?.["content-type"] || "";
+      if (ct.includes("application/json")) updated = await updateRes.json();
+    } catch {
+      // ignore
+    }
+
+    let all: unknown;
+    try {
+      const ct = allRes.headers()?.["content-type"] || "";
+      if (ct.includes("application/json")) all = await allRes.json();
+    } catch {
+      // ignore
+    }
+
+    return { status, updated, all, url };
+  }
+
   async submitAndEnsureClosed(): Promise<void> {
     await this.submit();
     await this.ensureClosed();
