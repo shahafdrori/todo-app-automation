@@ -7,7 +7,8 @@ Built as a **portfolio-grade** E2E suite with an emphasis on **cross-browser rel
 * **Sharding** for faster CI runs
 * **Blob reports + merged HTML report** for a single CI artifact
 * **Optional in-memory Tasks API mock** (`MOCK_API=true`) for deterministic tests
-* **Page Object Model + reusable helpers** for maintainable test code
+* **Mock + Real Stack coverage** (mock mode for PR gate, real Mongo+backend+frontend in nightly/manual CI)
+* **Page Object Model + reusable helpers/components** for maintainable test code
 
 ---
 
@@ -15,7 +16,7 @@ Built as a **portfolio-grade** E2E suite with an emphasis on **cross-browser rel
 
 * Playwright Test Runner
 * TypeScript
-* Page Object Model (POM)
+* Page Object Model (POM) + reusable components (TaskCard)
 * GitHub Actions CI (browser matrix + sharding + merged report)
 * Optional in-memory Tasks API mock (`MOCK_API=true`)
 * dotenv for local config (`.env`)
@@ -36,18 +37,36 @@ npm run report
 
 ## What’s covered by the tests
 
-UI flows:
+### UI flows
 
 * Navigation between tabs (Home/Admin/Map)
 * Create a task from **Home** and validate it appears in the **Admin** table (full row validation)
 * Create a task from **Admin** and validate it appears in the **Admin** table (full row validation)
 * Task dialog behavior: fill + cancel, submit, coordinate inputs are populated
-* Clear All removes tasks from Home + Admin and persists after reload
-* Table assertions via a generic `TableHelper` (headers, row search, per-cell validation)
-* Home task list: validate item actions (toggle complete, edit, delete, open map) + validate details (subject/priority/coords)
-* Delete from home list removes the task from Home and Admin (mock + real)
+* Clear All removes tasks from Home + Admin and persists after reload (mock + real)
+* Home filters:
 
-Map interactions:
+  * Search filters tasks by name (mock + real)
+  * Show Completed is tracked as a known frontend bug (mock-only expected failure)
+* Home task list (Task Card actions + details):
+
+  * Validate actions exist (checkbox, edit, delete, location)
+  * Validate details parsing (subject, priority, coordinates)
+  * Toggle completion and validate UI change (name color)
+  * Delete from home list removes the task from Home + Admin (including filtered view + reload) (mock + real)
+  * Edit from home list updates the task in Home + Admin (prefill + update + reload) (mock + real)
+  * Location from home list opens the map dialog and validates marker matches task coordinates (filtered view + close) (mock + real)
+
+### Admin table assertions
+
+* Generic `TableHelper` (headers, row search, per-cell validation)
+* Task-specific assertions in `taskTableAsserts.ts`:
+
+  * Row presence by NAME
+  * Strict date matching (input `MM/DD/YYYY` to UI `DD Mon YYYY`)
+  * Coordinate numeric assertions (`toBeCloseTo`)
+
+### Map interactions
 
 * Double-click selects a location and fills longitude/latitude inputs
 * Marker moves accordingly (validated via debug hooks)
@@ -55,7 +74,11 @@ Map interactions:
 
   * Mouse wheel zoom on Map tab
   * Zoom buttons in the dialog map
-* Zoom level is validated via OpenLayers debug hooks (`__OL_DEBUG__`)
+* Zoom level validated via OpenLayers debug hooks (`__OL_DEBUG__`)
+* Marker coordinate normalization helper supports both:
+
+  * lon/lat degrees (EPSG:4326)
+  * WebMercator meters (EPSG:3857) converted to lon/lat
 
 ---
 
@@ -63,12 +86,13 @@ Map interactions:
 
 ```
 .github/workflows/
-  playwright.yml              # CI (Mock): 3 browsers × 3 shards, blob upload + merged HTML report
-  playwright-real.yml         # CI (Real Stack): Mongo + backend + frontend preview + chromium run
+  playwright.yml              # CI (Mock): 3 browsers x 3 shards, blob upload + merged HTML report
+  playwright-real.yml         # CI (Real Stack): Mongo + backend + frontend build/preview + chromium run
 
 tests/
   components/
     navBar.ts                 # NavBar component (tab navigation)
+    TaskCard.ts               # Task card component (actions + reads inside a card root)
   data/
     apiRoutes.ts              # Central API route matchers (used by mocks + waits)
     taskData.ts               # Unique task builder + date utilities
@@ -82,19 +106,22 @@ tests/
     debug/
       apiLogs.ts              # Optional request/response logging (API_LOGS=true)
     flows/
-      taskFlows.ts            # Reusable UI flows (e.g., createTaskFromHome)
+      taskFlows.ts            # Reusable UI flows (e.g., createTaskFromHome/Admin)
     list/
-      homeTaskListText.ts     # Parse subject/priority/coords from home list item text
+      homeTaskListText.ts     # Parse subject/priority/coords from home task meta text
     map/
       mapHelpers.ts           # OpenLayers helpers (click/pan/zoom, debug-hook validation)
+    table/
+      taskTableAsserts.ts     # Task-focused admin table assertions (date + coords + presence/absence)
   mocks/
     tasksApiMock.ts           # In-memory Tasks API mock (context.route)
   pages/
-    AddTaskDialog.ts          # Dialog POM
+    AddTaskDialog.ts          # Dialog POM (create + update waits)
     AdminTablePage.ts         # Admin page POM + table assertions
     HomePage.ts               # Home page POM (search/clearAll/showCompleted)
-    HomeTaskList.ts           # Home list POM (item actions + read values)
+    HomeTaskList.ts           # Home list POM (find cards, click actions, read values)
     MapPage.ts                # Map tab/dialog POM helpers
+    TaskLocationDialog.ts     # Location dialog POM (marker assertions + close)
   specs/
     admin-table.spec.ts
     clear-all.spec.ts
@@ -102,6 +129,9 @@ tests/
     home-task-list.spec.ts
     home.spec.ts
     map-tab.spec.ts
+    task-card-delete.spec.ts
+    task-card-edit.spec.ts
+    task-card-location.spec.ts
     todo-dialog.spec.ts
     todo-map-dialog.spec.ts
 
@@ -144,12 +174,12 @@ cp .env.example .env
 
 Supported variables:
 
-* `BASE_URL` – where the UI is running
+* `BASE_URL` - where the UI is running
   If not set, Playwright uses: `http://localhost:5173`
-* `MOCK_API` – enable/disable the in-memory Tasks API mock
+* `MOCK_API` - enable/disable the in-memory Tasks API mock
   `true` = mock mode (deterministic)
   `false` = real backend mode (requires backend + DB)
-* `API_LOGS` – opt-in API debug logs (request/response logging)
+* `API_LOGS` - opt-in API debug logs (request/response logging)
   `true` = enable logs
   `false` = disable logs (default)
 
@@ -239,7 +269,7 @@ npm run dev
 npm run test:real
 ```
 
-> Note: The backend/frontend/database are not part of this repo. This repo only contains the Playwright E2E suite.
+Note: The backend/frontend/database are not part of this repo. This repo only contains the Playwright E2E suite.
 
 Other useful real-mode commands:
 
@@ -277,7 +307,7 @@ npm run report
 
 When `MOCK_API=true`, tests install a **browser-context** route mock (`context.route`) that intercepts Tasks API requests and serves responses from an in-memory state.
 
-The following endpoints are handled fully in memory:
+Endpoints handled fully in memory:
 
 * `GET /tasks/all`
 * `POST /tasks/add`
@@ -297,7 +327,7 @@ Some frontend builds contain hardcoded backend URLs such as:
 
 To keep tests stable (especially on WebKit and CI), the fixture injects an init script that rewrites:
 
-`http://localhost:3000/...` → `window.location.origin/...`
+`http://localhost:3000/...` -> `window.location.origin/...`
 
 This keeps behavior consistent across:
 
@@ -319,7 +349,7 @@ Behavior:
 * Runs on pull requests and pushes to main/master
 * Browsers: Chromium, Firefox, WebKit
 * Sharding: 3 shards per browser (total **9** parallel E2E jobs)
-* Target UI: deployed frontend (`BASE_URL`)
+* Target UI: deployed frontend (`BASE_URL=https://todolisthafifa-frontend.vercel.app`)
 * Mode: mock mode (`MOCK_API=true`)
 * Produces a merged HTML report from blob reports
 
@@ -340,7 +370,7 @@ Behavior:
   * MongoDB service
   * backend (`npm start`)
   * frontend (`npm run build` + `npm run preview`)
-* Runs Playwright **Chromium only** against `http://localhost:5173`
+* Runs Playwright **Chromium only** against `http://127.0.0.1:5173`
 * Mode: real backend + DB (`MOCK_API=false`)
 
 Why Chromium only:
@@ -362,4 +392,3 @@ Artifacts:
   * Completion state isn’t persisted to the backend
   * The home list isn’t filtered by `showCompleted` yet
 * Because of that, `home-filters.spec.ts` includes a **mock-only** test marked as an expected failure (`test.fail(...)`) and it’s skipped in real mode.
-

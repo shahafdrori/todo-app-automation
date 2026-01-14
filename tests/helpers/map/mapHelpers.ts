@@ -77,6 +77,47 @@ export async function getMarkerCoords(
   });
 }
 
+// Convert EPSG:3857 meters to lon/lat degrees (EPSG:4326)
+function webMercatorToLonLat(x: number, y: number): [number, number] {
+  const R = 6378137;
+  const lon = (x / R) * (180 / Math.PI);
+  const lat =
+    (2 * Math.atan(Math.exp(y / R)) - Math.PI / 2) * (180 / Math.PI);
+  return [lon, lat];
+}
+
+/**
+ * Returns marker coordinates as lon/lat degrees.
+ * Works whether __OL_DEBUG__.getMarkerCoords returns EPSG:3857 meters or lon/lat degrees.
+ */
+export async function getMarkerLonLat(
+  page: Page
+): Promise<[number, number] | null> {
+  return await page.evaluate(() => {
+    const debug = (window as any).__OL_DEBUG__;
+    const coords = debug?.getMarkerCoords?.() ?? null;
+    if (!coords) return null;
+
+    const x = Number(coords[0]);
+    const y = Number(coords[1]);
+    if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
+
+    // Heuristic:
+    // If abs(x) > 180 or abs(y) > 90, it's almost certainly WebMercator meters.
+    const looksLikeDegrees = Math.abs(x) <= 180 && Math.abs(y) <= 90;
+
+    if (looksLikeDegrees) return [x, y];
+
+    // WebMercator -> lon/lat
+    const R = 6378137;
+    const lon = (x / R) * (180 / Math.PI);
+    const lat =
+      (2 * Math.atan(Math.exp(y / R)) - Math.PI / 2) * (180 / Math.PI);
+
+    return [lon, lat];
+  });
+}
+
 export async function clickRandomOnMapAndValidateInputs(
   page: Page
 ): Promise<LngLat> {
