@@ -183,14 +183,6 @@ Supported variables:
   `true` = enable logs
   `false` = disable logs (default)
 
-Example `.env`:
-
-```ini
-BASE_URL=http://localhost:5173
-MOCK_API=true
-API_LOGS=false
-```
-
 Example `.env.example` (committed):
 
 ```ini
